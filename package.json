@@ -1,0 +1,14 @@
+{
+  "name": "rocket-league-2d-pro-online-v3",
+  "version": "3.0.0",
+  "description": "Rocket League 2D Pro Online V3 mit originaler Grafik/Physik plus Raumliste, Ready-Lobby und Online-Modi",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
+}
