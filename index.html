@@ -1,0 +1,3497 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>Rocket League 2D Pro Online V4</title>
+<style>
+  :root {
+    --bg0: #050814;
+    --bg1: #07132a;
+    --blue: #00b7ff;
+    --orange: #ff8a1d;
+    --gold: #ffd447;
+    --glass: rgba(255,255,255,.08);
+    --line: rgba(255,255,255,.2);
+    --text: #f4f7ff;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    min-height: 100%;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 20% 15%, rgba(0,183,255,.18), transparent 32%),
+      radial-gradient(circle at 85% 80%, rgba(255,138,29,.16), transparent 34%),
+      linear-gradient(135deg, var(--bg0), var(--bg1));
+    color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  }
+
+  .page {
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+  }
+
+  .shell {
+    width: min(1480px, 100%);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.045));
+    box-shadow: 0 20px 60px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.12);
+    backdrop-filter: blur(12px);
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.05;
+  }
+
+  .brand strong {
+    font-size: clamp(18px, 2.2vw, 28px);
+    letter-spacing: -.04em;
+  }
+
+  .brand span {
+    color: rgba(244,247,255,.66);
+    font-size: 12px;
+    margin-top: 5px;
+  }
+
+  .pillrow {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .pill {
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 999px;
+    padding: 8px 10px;
+    background: rgba(255,255,255,.07);
+    color: rgba(244,247,255,.82);
+    font-size: 12px;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .gameWrap {
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.18);
+    background: #06110c;
+    box-shadow:
+      0 26px 90px rgba(0,0,0,.5),
+      0 0 0 1px rgba(255,255,255,.05) inset,
+      0 0 80px rgba(0,183,255,.12),
+      0 0 90px rgba(255,138,29,.1);
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1240 / 760;
+    background: #0b331c;
+    image-rendering: auto;
+    cursor: crosshair;
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: grid;
+    place-items: center;
+    padding: 28px;
+  }
+
+  .centerCard {
+    pointer-events: auto;
+    width: min(780px, calc(100vw - 44px));
+    padding: 22px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(10,18,36,.88), rgba(8,12,24,.72));
+    box-shadow: 0 25px 70px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.1);
+    backdrop-filter: blur(15px);
+    text-align: center;
+  }
+
+  .centerCard h1 {
+    margin: 0 0 8px;
+    font-size: clamp(28px, 4vw, 52px);
+    letter-spacing: -.06em;
+  }
+
+  .centerCard p {
+    margin: 8px 0 16px;
+    color: rgba(244,247,255,.72);
+    line-height: 1.45;
+  }
+
+  .buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+
+  button {
+    border: 0;
+    border-radius: 999px;
+    padding: 12px 17px;
+    font-weight: 800;
+    letter-spacing: -.01em;
+    color: #06101f;
+    background: linear-gradient(135deg, #e8f7ff, #7edfff);
+    box-shadow: 0 12px 30px rgba(0,183,255,.22);
+    cursor: pointer;
+    transition: transform .15s ease, filter .15s ease;
+  }
+
+  button:hover { transform: translateY(-1px) scale(1.015); filter: brightness(1.05); }
+  button:active { transform: translateY(1px) scale(.99); }
+  button.secondary { color: #fff; background: rgba(255,255,255,.12); box-shadow: none; border: 1px solid rgba(255,255,255,.16); }
+
+  .hud {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    padding: clamp(8px, 2vw, 18px);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .scoreLine {
+    justify-self: center;
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 2vw, 24px);
+    padding: 9px 16px;
+    border-radius: 999px;
+    background: rgba(4,10,22,.55);
+    border: 1px solid rgba(255,255,255,.15);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    backdrop-filter: blur(8px);
+  }
+
+  .score {
+    font-size: clamp(22px, 4vw, 42px);
+    font-weight: 950;
+    line-height: 1;
+    min-width: 38px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .score.blue { color: var(--blue); text-shadow: 0 0 18px rgba(0,183,255,.55); }
+  .score.orange { color: var(--orange); text-shadow: 0 0 18px rgba(255,138,29,.55); }
+
+  .timer {
+    color: rgba(244,247,255,.82);
+    font-size: clamp(18px, 2vw, 27px);
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    min-width: 75px;
+    text-align: center;
+  }
+
+  .bottomHud {
+    align-self: end;
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 10px;
+  }
+
+  .boostBox {
+    width: min(220px, 36vw);
+    padding: 9px;
+    border-radius: 16px;
+    background: rgba(4,10,22,.55);
+    border: 1px solid rgba(255,255,255,.15);
+    backdrop-filter: blur(8px);
+  }
+
+  .boostLabel {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 800;
+    color: rgba(244,247,255,.76);
+    margin-bottom: 7px;
+  }
+
+  .bar {
+    height: 13px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.1);
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+  }
+
+  .bar > i {
+    display: block;
+    width: 50%;
+    height: 100%;
+    border-radius: inherit;
+    transition: width .08s linear;
+  }
+
+  #blueBoost { background: linear-gradient(90deg, #007dff, #00d9ff, #e8fbff); }
+  #orangeBoost { background: linear-gradient(90deg, #ff5a00, #ffb020, #fff0a0); }
+
+  .bigText {
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+    font-size: clamp(48px, 10vw, 118px);
+    line-height: .9;
+    font-weight: 1000;
+    letter-spacing: -.07em;
+    text-shadow: 0 18px 40px rgba(0,0,0,.75), 0 0 35px rgba(255,212,71,.45);
+    filter: drop-shadow(0 0 20px rgba(255,255,255,.12));
+    opacity: 0;
+    transition: opacity .12s ease, transform .12s ease;
+    white-space: nowrap;
+  }
+
+  .bigText.show { opacity: 1; transform: translate(-50%, -50%) scale(1.02); }
+
+  .smallHelp {
+    position: absolute;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%);
+    color: rgba(244,247,255,.56);
+    font-size: 12px;
+    white-space: nowrap;
+    pointer-events: none;
+    text-shadow: 0 2px 8px #000;
+  }
+
+
+  .nameGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 18px 0 10px;
+  }
+
+  .nameInput {
+    text-align: left;
+    display: grid;
+    gap: 7px;
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(255,255,255,.065);
+  }
+
+  .nameInput span {
+    font-size: 12px;
+    font-weight: 900;
+    color: rgba(244,247,255,.72);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+
+  .nameInput input {
+    width: 100%;
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 13px;
+    padding: 12px 12px;
+    color: #fff;
+    background: rgba(4,10,22,.55);
+    outline: none;
+    font-weight: 900;
+    font-size: 15px;
+  }
+
+  .nameInput input:focus {
+    border-color: rgba(126,231,255,.7);
+    box-shadow: 0 0 0 3px rgba(0,183,255,.13);
+  }
+
+  .blueSide input { box-shadow: inset 3px 0 0 var(--blue); }
+  .orangeSide input { box-shadow: inset 3px 0 0 var(--orange); }
+
+  button.pillBtn {
+    color: rgba(244,247,255,.86);
+    background: rgba(255,255,255,.07);
+    box-shadow: none;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 999px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  button.pillBtn:disabled {
+    opacity: .42;
+    cursor: not-allowed;
+    transform: none;
+    filter: none;
+  }
+
+  .hintText {
+    margin-top: 10px;
+    color: rgba(244,247,255,.58);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+
+  .onlinePanel {
+    margin-top: 16px;
+    padding: 15px;
+    border-radius: 18px;
+    border: 1px solid rgba(126,231,255,.22);
+    background: linear-gradient(180deg, rgba(0,183,255,.09), rgba(255,255,255,.035));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    text-align: left;
+  }
+
+  .onlineTitle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-weight: 1000;
+    letter-spacing: -.03em;
+  }
+
+  .onlineTitle span {
+    color: rgba(244,247,255,.58);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0;
+  }
+
+  .onlineGrid {
+    display: grid;
+    grid-template-columns: 1.1fr .9fr;
+    gap: 10px;
+  }
+
+  .onlineInput, .onlineSelect {
+    width: 100%;
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 13px;
+    padding: 12px 12px;
+    color: #fff;
+    background: rgba(4,10,22,.55);
+    outline: none;
+    font-weight: 900;
+    font-size: 14px;
+  }
+
+  .onlineInput:focus, .onlineSelect:focus {
+    border-color: rgba(126,231,255,.7);
+    box-shadow: 0 0 0 3px rgba(0,183,255,.13);
+  }
+
+  .onlineSelect option { color: #08101d; }
+
+  .onlineActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .onlineActions button {
+    padding: 10px 13px;
+    font-size: 13px;
+  }
+
+  .onlineMessage {
+    min-height: 18px;
+    margin-top: 9px;
+    color: rgba(244,247,255,.72);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .roomList, .lobbyBox {
+    margin-top: 10px;
+    display: grid;
+    gap: 8px;
+  }
+
+  .roomItem, .playerItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.055);
+  }
+
+  .roomItem strong, .playerItem strong { color: #fff; }
+  .roomItem small, .playerItem small { color: rgba(244,247,255,.6); font-weight: 800; }
+
+  .readyDot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 74px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.08);
+    font-size: 12px;
+    font-weight: 1000;
+  }
+
+  .readyDot.ready {
+    color: #0b1c17;
+    background: linear-gradient(135deg, #c8ffe2, #5dffb0);
+  }
+
+  .lobbyHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 11px;
+    border-radius: 15px;
+    background: rgba(4,10,22,.42);
+    border: 1px solid rgba(255,255,255,.12);
+  }
+
+  .roomCode {
+    font-size: 22px;
+    font-weight: 1000;
+    letter-spacing: .08em;
+    color: #7ee7ff;
+    text-shadow: 0 0 18px rgba(0,183,255,.45);
+  }
+
+  .onlineStatus {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.16);
+    background: rgba(4,10,22,.62);
+    backdrop-filter: blur(9px);
+    color: rgba(244,247,255,.78);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .onlineStatus button {
+    padding: 7px 9px;
+    font-size: 12px;
+    box-shadow: none;
+  }
+
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 760px) {
+    .page { padding: 8px; }
+    .topbar { align-items: flex-start; }
+    .pillrow { display: none; }
+    .bottomHud { align-items: stretch; }
+    .boostBox { width: 43vw; }
+    .smallHelp { display: none; }
+    .nameGrid { grid-template-columns: 1fr; }
+    .onlineGrid { grid-template-columns: 1fr; }
+    .centerCard { max-height: calc(100vh - 78px); overflow: auto; }
+  }
+
+
+  /* V4: neues einfaches Online-Menü. Das Spiel/Canvas bleibt unverändert. */
+  .centerCard.onlineMenuCard {
+    width: min(1040px, calc(100vw - 36px));
+    max-height: min(84vh, 780px);
+    overflow: auto;
+    text-align: left;
+    padding: 0;
+    border-radius: 28px;
+  }
+
+  .onlineHero {
+    padding: 22px 24px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid rgba(255,255,255,.13);
+    background:
+      radial-gradient(circle at 12% 0%, rgba(0,183,255,.22), transparent 30%),
+      radial-gradient(circle at 95% 10%, rgba(255,138,29,.18), transparent 31%),
+      linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+  }
+
+  .onlineHero h1 {
+    margin: 0;
+    font-size: clamp(30px, 4vw, 54px);
+    line-height: .92;
+    letter-spacing: -.07em;
+  }
+
+  .onlineHero p {
+    margin: 9px 0 0;
+    color: rgba(244,247,255,.66);
+    font-weight: 700;
+  }
+
+  .onlineStepBadge {
+    border: 1px solid rgba(255,255,255,.16);
+    background: rgba(255,255,255,.08);
+    border-radius: 999px;
+    padding: 10px 12px;
+    color: rgba(244,247,255,.82);
+    font-size: 12px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .onlineScreen { padding: 22px 24px 24px; }
+
+  .gateBox {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: end;
+    margin-top: 18px;
+  }
+
+  .onlineField { display: grid; gap: 8px; }
+  .onlineField label, .sectionLabel {
+    color: rgba(244,247,255,.62);
+    font-size: 12px;
+    font-weight: 1000;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+
+  .onlineNameBig,
+  .onlineInput,
+  .onlineSelect {
+    width: 100%;
+    border: 1px solid rgba(255,255,255,.17);
+    border-radius: 18px;
+    padding: 14px 15px;
+    color: #fff;
+    background: rgba(4,10,22,.62);
+    outline: none;
+    font-weight: 950;
+    font-size: 15px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
+  }
+
+  .onlineNameBig {
+    font-size: clamp(22px, 3.3vw, 38px);
+    letter-spacing: -.04em;
+    padding: 18px 18px;
+    border-radius: 22px;
+  }
+
+  .onlineNameBig:focus,
+  .onlineInput:focus,
+  .onlineSelect:focus {
+    border-color: rgba(126,231,255,.85);
+    box-shadow: 0 0 0 4px rgba(0,183,255,.14), inset 0 1px 0 rgba(255,255,255,.08);
+  }
+
+  .onlineSelect option { color: #07101d; }
+
+  .menuTopLine {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .nameChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: rgba(0,183,255,.12);
+    border: 1px solid rgba(0,183,255,.23);
+    color: rgba(244,247,255,.9);
+    font-size: 13px;
+    font-weight: 950;
+  }
+
+  .nameChip button {
+    padding: 6px 9px;
+    font-size: 11px;
+    box-shadow: none;
+  }
+
+  .quickGrid {
+    display: grid;
+    grid-template-columns: 1.15fr .85fr;
+    gap: 14px;
+  }
+
+  .actionPanel {
+    padding: 15px;
+    border: 1px solid rgba(255,255,255,.13);
+    border-radius: 22px;
+    background: rgba(255,255,255,.055);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
+  }
+
+  .actionPanel h2,
+  .roomsHeader h2,
+  .lobbyMain h2 {
+    margin: 0 0 10px;
+    font-size: 20px;
+    letter-spacing: -.04em;
+  }
+
+  .actionRow { display: grid; grid-template-columns: 1fr auto; gap: 10px; margin-top: 10px; }
+
+  .roomList {
+    display: grid;
+    gap: 10px;
+    max-height: 290px;
+    overflow: auto;
+    padding-right: 4px;
+    margin-top: 10px;
+  }
+
+  .roomsHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .roomItem {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 14px;
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(255,255,255,.085), rgba(255,255,255,.045));
+    border: 1px solid rgba(255,255,255,.13);
+  }
+
+  .roomItem strong { font-size: 20px; letter-spacing: .08em; }
+  .roomItem small { color: rgba(244,247,255,.62); font-weight: 850; }
+
+  .roomMeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 7px;
+  }
+
+  .miniTag {
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.09);
+    color: rgba(244,247,255,.75);
+    font-size: 11px;
+    font-weight: 950;
+  }
+
+  .lobbyBox {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .lobbyMain {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .roomCodeBig {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 10px 0 14px;
+    padding: 14px 16px;
+    border-radius: 20px;
+    background: rgba(0,0,0,.24);
+    border: 1px solid rgba(255,255,255,.13);
+  }
+
+  .roomCode {
+    font-size: clamp(34px, 6vw, 64px);
+    line-height: .95;
+    font-weight: 1000;
+    letter-spacing: .13em;
+    color: #fff2a6;
+    text-shadow: 0 0 22px rgba(255,212,71,.32);
+  }
+
+  .playerListV4 { display: grid; gap: 10px; }
+
+  .playerItem {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 13px;
+    border-radius: 18px;
+    background: rgba(255,255,255,.065);
+    border: 1px solid rgba(255,255,255,.13);
+  }
+
+  .playerItem strong { color: #fff; font-size: 17px; }
+  .playerItem small { color: rgba(244,247,255,.58); font-weight: 900; }
+
+  .readyDot {
+    min-width: 92px;
+    text-align: center;
+    border-radius: 999px;
+    padding: 8px 10px;
+    color: rgba(244,247,255,.78);
+    background: rgba(255,255,255,.09);
+    border: 1px solid rgba(255,255,255,.11);
+    font-size: 12px;
+    font-weight: 1000;
+  }
+
+  .readyDot.ready {
+    color: #06101f;
+    background: linear-gradient(135deg, #9affbf, #46f08c);
+    border-color: rgba(154,255,191,.75);
+  }
+
+  .lobbyActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 13px;
+  }
+
+  .lobbyActions .wide { grid-column: span 2; }
+
+  .startHint {
+    min-height: 18px;
+    margin-top: 10px;
+    color: rgba(244,247,255,.68);
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
+  .onlineMessage {
+    margin-top: 13px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(0,0,0,.22);
+    border: 1px solid rgba(255,255,255,.1);
+    color: rgba(244,247,255,.77);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  details.localDetails {
+    margin-top: 16px;
+    border: 1px solid rgba(255,255,255,.11);
+    border-radius: 18px;
+    padding: 12px;
+    background: rgba(255,255,255,.04);
+  }
+
+  details.localDetails summary {
+    cursor: pointer;
+    font-weight: 950;
+    color: rgba(244,247,255,.82);
+  }
+
+  .localDetails .nameGrid { margin-top: 12px; }
+
+  button:disabled {
+    opacity: .42;
+    cursor: not-allowed;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  @media (max-width: 850px) {
+    .onlineHero { align-items: flex-start; flex-direction: column; }
+    .gateBox, .quickGrid, .actionRow, .lobbyMain { grid-template-columns: 1fr; }
+    .lobbyActions .wide { grid-column: auto; }
+    .centerCard.onlineMenuCard { max-height: 90vh; }
+  }
+
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="shell">
+    <div class="topbar">
+      <div class="brand">
+        <strong>🚀 Rocket League 2D Pro Online V4</strong>
+        <span>Original-Grafik • Online-Räume • Ready-Lobby • 1v1/2v2/3v3/4v4 Menschen vs Bots</span>
+      </div>
+      <div class="pillrow">
+        <div class="pill">Blau: WASD + Shift</div>
+        <div class="pill">Orange: Pfeile + Enter</div>
+        <div class="pill">Online: Räume + Ready + Bots</div>
+        <div class="pill">P Pause</div>
+        <div class="pill">R Reset</div>
+        <div class="pill">M Sound</div>
+        <button class="pillBtn" id="saveReplayBtn" disabled>Replay speichern</button>
+        <button class="pillBtn" id="loadReplayBtnTop">Replay laden</button>
+        <button class="pillBtn" id="completeRestartBtn">Komplett neu starten</button>
+      </div>
+    </div>
+
+    <div class="gameWrap" id="gameWrap">
+      <canvas id="game" width="1240" height="760"></canvas>
+
+      <div class="hud">
+        <div class="scoreLine">
+          <div class="score blue" id="scoreBlue">0</div>
+          <div class="timer" id="timer">5:00</div>
+          <div class="score orange" id="scoreOrange">0</div>
+        </div>
+        <div></div>
+        <div class="bottomHud">
+          <div class="boostBox">
+            <div class="boostLabel"><span id="blueBoostLabel">Blau Boost</span><span id="blueBoostText">100</span></div>
+            <div class="bar"><i id="blueBoost"></i></div>
+          </div>
+          <div class="boostBox">
+            <div class="boostLabel"><span id="orangeBoostLabel">Orange Boost</span><span id="orangeBoostText">100</span></div>
+            <div class="bar"><i id="orangeBoost"></i></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bigText" id="bigText"></div>
+      <div class="smallHelp">WASD/Shift • Pfeile/Enter • Online: jeder nutzt WASD/Shift oder Pfeile/Enter • R Reset • P Pause</div>
+      <div class="onlineStatus hidden" id="onlineStatus"><span id="onlineStatusText">Online</span><button class="secondary" id="backToLobbyBtn">Zur Lobby</button></div>
+
+      <div class="overlay" id="menu">
+        <div class="centerCard onlineMenuCard">
+          <div class="onlineHero">
+            <div>
+              <h1>Online spielen</h1>
+              <p>Erst Name eingeben, dann Raum erstellen oder beitreten. Das Spiel selbst bleibt die originale Pro-Version.</p>
+            </div>
+            <div class="onlineStepBadge" id="onlineStepBadge">Schritt 1: Name</div>
+          </div>
+
+          <div class="onlineScreen" id="nameGate">
+            <div class="sectionLabel">Dein Spielername</div>
+            <div class="gateBox">
+              <div class="onlineField">
+                <input class="onlineNameBig" id="onlineNameInput" maxlength="16" placeholder="Name eingeben…" autocomplete="off" spellcheck="false" />
+              </div>
+              <button id="saveOnlineNameBtn">Weiter</button>
+            </div>
+            <div class="onlineMessage" id="onlineMessage">Gib zuerst deinen Namen ein. Ohne Name kann man keinen Raum erstellen oder beitreten.</div>
+          </div>
+
+          <div class="onlineScreen hidden" id="roomBrowser">
+            <div class="menuTopLine">
+              <div class="nameChip">👤 <span id="currentNameText">Spieler</span> <button class="secondary" id="changeNameBtn">ändern</button></div>
+              <button class="secondary" id="refreshRoomsBtn">Räume aktualisieren</button>
+            </div>
+
+            <div class="quickGrid">
+              <div class="actionPanel">
+                <h2>Raum erstellen</h2>
+                <div class="onlineField">
+                  <label for="onlineModeSelect">Modus</label>
+                  <select class="onlineSelect" id="onlineModeSelect">
+                    <option value="pvp1v1">1v1 Spieler gegen Spieler</option>
+                    <option value="bots2v2">2v2 Menschen vs 2 gute Bots</option>
+                    <option value="bots3v3">3v3 Menschen vs 3 gute Bots</option>
+                    <option value="bots4v4">4v4 Menschen vs 4 gute Bots</option>
+                  </select>
+                </div>
+                <div class="actionRow">
+                  <div class="onlineMessage" style="margin:0">Host wählt den Modus. Im Raum müssen alle Ready drücken.</div>
+                  <button id="createOnlineRoomBtn">Raum erstellen</button>
+                </div>
+              </div>
+
+              <div class="actionPanel">
+                <h2>Per Code beitreten</h2>
+                <div class="onlineField">
+                  <label for="onlineCodeInput">Raumcode</label>
+                  <input class="onlineInput" id="onlineCodeInput" maxlength="8" placeholder="z. B. ABC12" autocomplete="off" spellcheck="false" />
+                </div>
+                <div class="actionRow">
+                  <button class="secondary" id="clearCodeBtn">Leeren</button>
+                  <button id="joinOnlineRoomBtn">Beitreten</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="roomsHeader">
+              <h2>Offene Räume</h2>
+              <span class="miniTag" id="playerCountText">automatisch aktualisiert</span>
+            </div>
+            <div class="roomList" id="roomList"></div>
+
+            <details class="localDetails">
+              <summary>Lokales Spiel / Training anzeigen</summary>
+              <div class="nameGrid">
+                <label class="nameInput blueSide">
+                  <span>Blauer Spieler</span>
+                  <input id="blueNameInput" maxlength="14" value="Blau" autocomplete="off" spellcheck="false" />
+                </label>
+                <label class="nameInput orangeSide">
+                  <span>Spieler 2 / Orange</span>
+                  <input id="orangeNameInput" maxlength="14" value="Orange" autocomplete="off" spellcheck="false" />
+                </label>
+              </div>
+              <div class="buttons">
+                <button id="startBtn">1v1 Tastatur</button>
+                <button class="secondary" id="practiceBtn">1v1 Bot</button>
+                <button class="secondary" id="twovtwoBtn">2v2: 2 Spieler vs 2 Bots</button>
+                <button class="secondary" id="trainingBtn">Training: allein</button>
+                <button class="secondary" id="loadReplayBtnMenu">Replay laden</button>
+              </div>
+            </details>
+          </div>
+
+          <div class="onlineScreen hidden" id="lobbyScreen">
+            <div class="menuTopLine">
+              <div class="nameChip">👤 <span id="lobbyNameText">Spieler</span></div>
+              <button class="secondary" id="leaveRoomBtn">Raum verlassen</button>
+            </div>
+
+            <div class="lobbyBox" id="lobbyBox">
+              <div class="lobbyMain">
+                <div class="actionPanel">
+                  <h2>Raumcode</h2>
+                  <div class="roomCodeBig">
+                    <div class="roomCode" id="lobbyCode">-----</div>
+                    <button class="secondary" id="copyCodeBtn">Kopieren</button>
+                  </div>
+                  <div class="onlineField">
+                    <label for="lobbyModeSelect">Modus</label>
+                    <select class="onlineSelect" id="lobbyModeSelect"></select>
+                  </div>
+                  <div class="onlineMessage" id="lobbyInfoText">Host wählt Modus. Jeder muss Ready sein.</div>
+                </div>
+
+                <div class="actionPanel">
+                  <h2>Spieler & Ready</h2>
+                  <div class="playerListV4" id="playerList"></div>
+                  <div class="lobbyActions">
+                    <button class="secondary" id="readyBtn">Ready</button>
+                    <button id="startOnlineBtn">Spiel starten</button>
+                  </div>
+                  <div class="startHint" id="startHint">Warte auf Spieler…</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <input class="hidden" type="file" id="replayFileInput" accept="application/json,.json" />
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const menu = document.getElementById('menu');
+  const bigText = document.getElementById('bigText');
+  const scoreBlueEl = document.getElementById('scoreBlue');
+  const scoreOrangeEl = document.getElementById('scoreOrange');
+  const timerEl = document.getElementById('timer');
+  const blueBoostEl = document.getElementById('blueBoost');
+  const orangeBoostEl = document.getElementById('orangeBoost');
+  const blueBoostText = document.getElementById('blueBoostText');
+  const orangeBoostText = document.getElementById('orangeBoostText');
+  const blueBoostLabel = document.getElementById('blueBoostLabel');
+  const orangeBoostLabel = document.getElementById('orangeBoostLabel');
+  const blueNameInput = document.getElementById('blueNameInput');
+  const orangeNameInput = document.getElementById('orangeNameInput');
+  const saveReplayBtn = document.getElementById('saveReplayBtn');
+  const loadReplayBtnTop = document.getElementById('loadReplayBtnTop');
+  const loadReplayBtnMenu = document.getElementById('loadReplayBtnMenu');
+  const replayFileInput = document.getElementById('replayFileInput');
+  const completeRestartBtn = document.getElementById('completeRestartBtn');
+  const onlineNameInput = document.getElementById('onlineNameInput');
+  const onlineModeSelect = document.getElementById('onlineModeSelect');
+  const onlineCodeInput = document.getElementById('onlineCodeInput');
+  const createOnlineRoomBtn = document.getElementById('createOnlineRoomBtn');
+  const joinOnlineRoomBtn = document.getElementById('joinOnlineRoomBtn');
+  const refreshRoomsBtn = document.getElementById('refreshRoomsBtn');
+  const onlineMessage = document.getElementById('onlineMessage');
+  const roomList = document.getElementById('roomList');
+  const lobbyBox = document.getElementById('lobbyBox');
+  const lobbyCode = document.getElementById('lobbyCode');
+  const lobbyModeSelect = document.getElementById('lobbyModeSelect');
+  const playerList = document.getElementById('playerList');
+  const readyBtn = document.getElementById('readyBtn');
+  const startOnlineBtn = document.getElementById('startOnlineBtn');
+  const leaveRoomBtn = document.getElementById('leaveRoomBtn');
+  const onlineStatus = document.getElementById('onlineStatus');
+  const onlineStatusText = document.getElementById('onlineStatusText');
+  const backToLobbyBtn = document.getElementById('backToLobbyBtn');
+  const nameGate = document.getElementById('nameGate');
+  const roomBrowser = document.getElementById('roomBrowser');
+  const lobbyScreen = document.getElementById('lobbyScreen');
+  const saveOnlineNameBtn = document.getElementById('saveOnlineNameBtn');
+  const changeNameBtn = document.getElementById('changeNameBtn');
+  const currentNameText = document.getElementById('currentNameText');
+  const lobbyNameText = document.getElementById('lobbyNameText');
+  const onlineStepBadge = document.getElementById('onlineStepBadge');
+  const playerCountText = document.getElementById('playerCountText');
+  const startHint = document.getElementById('startHint');
+  const lobbyInfoText = document.getElementById('lobbyInfoText');
+  const copyCodeBtn = document.getElementById('copyCodeBtn');
+  const clearCodeBtn = document.getElementById('clearCodeBtn');
+
+  const W = 1240;
+  const H = 760;
+  const WALL = 66;
+  const GOAL_H = 236;
+  const GOAL_Y = H / 2 - GOAL_H / 2;
+  const GOAL_TOP = GOAL_Y;
+  const GOAL_BOTTOM = GOAL_Y + GOAL_H;
+  const GOAL_DEPTH = 36;
+  const FIELD_L = WALL;
+  const FIELD_R = W - WALL;
+  const FIELD_T = WALL;
+  const FIELD_B = H - WALL;
+  const STEP = 1 / 120;
+  const MATCH_TIME = 300;
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const hypot = Math.hypot;
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const inGoalMouth = y => y > GOAL_TOP + 3 && y < GOAL_BOTTOM - 3;
+  const len = (x, y) => Math.hypot(x, y) || 0.00001;
+
+  const keys = new Set();
+  let state = 'menu';
+  let mode = 'match';
+  let last = performance.now();
+  let acc = 0;
+  let countdown = 0;
+  let goalFreeze = 0;
+  let gameClock = MATCH_TIME;
+  let shake = 0;
+  let slowMo = 0;
+  let muted = false;
+  let audioCtx = null;
+
+
+  const socket = typeof window.io === 'function' ? window.io() : null;
+  const online = {
+    socketId: null,
+    modes: {},
+    active: false,
+    role: 'offline',
+    room: null,
+    roomCode: '',
+    ownCar: null,
+    carByPlayer: new Map(),
+    lastSnapshotAt: 0,
+    lastRoomsAt: 0,
+    playerNameSet: false
+  };
+
+  const score = { blue: 0, orange: 0 };
+  const particles = [];
+  const sparks = [];
+  const rings = [];
+  const trail = [];
+
+  const REPLAY_SECONDS = 5.0;
+  const REPLAY_PLAYBACK_SECONDS = 3.9;
+  const replayBuffer = [];
+  let replayFrames = [];
+  let replayTimer = 0;
+  let replayIndex = 0;
+  let replayGoalName = '';
+  let replayGoalSide = '';
+  let replayScoringPlayer = '';
+  let replayLastTouch = '';
+  let replayShotSpeed = 0;
+  let lastReplayData = null;
+  let loadedReplayMode = false;
+  let modeLocked = false;
+  let replaySkipBlue = false;
+  let replaySkipOrange = false;
+
+  function makeCar(name, x, y, angle, color, accent, controls) {
+    return {
+      name, x, y, px: x, py: y, vx: 0, vy: 0, angle, av: 0,
+      radius: 28, width: 68, height: 38,
+      color, accent, boost: 100, maxBoost: 100, boosting: false,
+      boostPower: 0, throttleInput: 0, steerInput: 0, targetSpeed: 0,
+      supersonic: 0, demoed: false, demoTimer: 0,
+      controls, lastHit: 0, skid: 0
+    };
+  }
+
+  const blue = makeCar('Blau', 255, H / 2, 0, '#00b7ff', '#bff4ff', {
+    up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', boost: 'ShiftLeft', boost2: 'ShiftRight'
+  });
+
+  const orange = makeCar('Orange', W - 255, H / 2, Math.PI, '#ff8a1d', '#fff0b8', {
+    up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', boost: 'Enter', boost2: 'NumpadEnter'
+  });
+
+  const blueBot = makeCar('Blau Bot', 215, H / 2 + 120, 0, '#29c9ff', '#d8fbff', null);
+  const orangeBot = makeCar('Orange Bot', W - 215, H / 2 - 120, Math.PI, '#ffa53c', '#fff2c7', null);
+  blue.team = blueBot.team = 'blue';
+  orange.team = orangeBot.team = 'orange';
+  blue.isBot = orange.isBot = false;
+  blueBot.isBot = orangeBot.isBot = true;
+  blue.active = true;
+  orange.active = true;
+  blueBot.active = false;
+  orangeBot.active = false;
+  blue.aiThrottle = blue.aiSteer = blue.aiBoost = 0;
+  orange.aiThrottle = orange.aiSteer = orange.aiBoost = 0;
+  blueBot.aiThrottle = blueBot.aiSteer = blueBot.aiBoost = 0;
+  orangeBot.aiThrottle = orangeBot.aiSteer = orangeBot.aiBoost = 0;
+  const cars = [blue, orange, blueBot, orangeBot];
+
+  blue.onlineSlotId = 'human0';
+  orange.onlineSlotId = 'human1';
+  blueBot.onlineSlotId = 'bot0';
+  orangeBot.onlineSlotId = 'bot1';
+
+  const onlineHumanSlots = [blue, orange];
+  const onlineBotSlots = [blueBot, orangeBot];
+  for (let i = 2; i < 4; i++) {
+    const h = makeCar(`Spieler ${i + 1}`, 255, H / 2, 0, '#00cfff', '#d8fbff', null);
+    h.team = 'blue';
+    h.isBot = false;
+    h.active = false;
+    h.networkControlled = false;
+    h.netInput = { up: false, down: false, left: false, right: false, boost: false };
+    h.onlineSlotId = `human${i}`;
+    cars.push(h);
+    onlineHumanSlots.push(h);
+  }
+  for (let i = 2; i < 4; i++) {
+    const b = makeCar(`Bot ${i + 1}`, W - 235, H / 2, Math.PI, '#ff9a2a', '#fff0b8', null);
+    b.team = 'orange';
+    b.isBot = true;
+    b.active = false;
+    b.aiThrottle = b.aiSteer = b.aiBoost = 0;
+    b.onlineSlotId = `bot${i}`;
+    cars.push(b);
+    onlineBotSlots.push(b);
+  }
+
+  function setCarLook(car, color, accent) {
+    car.color = color;
+    car.accent = accent;
+  }
+
+  const ball = {
+    x: W / 2, y: H / 2, px: W / 2, py: H / 2,
+    vx: 0, vy: 0, radius: 17, spin: 0, angle: 0, lastTouch: null, lastTouchTeam: null
+  };
+
+  const boostPads = [
+    // Nur diese 6 Pads: links oben, rechts oben, links unten, rechts unten, mitte oben, mitte unten.
+    { x: FIELD_L + 108, y: FIELD_T + 92, big: true, value: 100, active: true, respawn: 0, maxRespawn: 8 },
+    { x: FIELD_R - 108, y: FIELD_T + 92, big: true, value: 100, active: true, respawn: 0, maxRespawn: 8 },
+    { x: FIELD_L + 108, y: FIELD_B - 92, big: true, value: 100, active: true, respawn: 0, maxRespawn: 8 },
+    { x: FIELD_R - 108, y: FIELD_B - 92, big: true, value: 100, active: true, respawn: 0, maxRespawn: 8 },
+    { x: W / 2, y: FIELD_T + 88, big: true, value: 100, active: true, respawn: 0, maxRespawn: 8 },
+    { x: W / 2, y: FIELD_B - 88, big: true, value: 100, active: true, respawn: 0, maxRespawn: 8 }
+  ];
+
+  function cleanPlayerName(value, fallback) {
+    const cleaned = String(value || '').replace(/[<>]/g, '').trim().replace(/\s+/g, ' ').slice(0, 14);
+    return cleaned || fallback;
+  }
+
+  function activeCars() {
+    return cars.filter(car => car.active);
+  }
+
+  function activeHumanCars() {
+    return activeCars().filter(car => !car.isBot);
+  }
+
+  function isTimedMode() {
+    return mode !== 'practice' && mode !== 'free';
+  }
+
+  function modeName() {
+    if (mode === 'online-pvp1v1') return 'Online 1v1';
+    if (mode === 'online-bots2v2') return 'Online 2v2 Menschen vs Bots';
+    if (mode === 'online-bots3v3') return 'Online 3v3 Menschen vs Bots';
+    if (mode === 'online-bots4v4') return 'Online 4v4 Menschen vs Bots';
+    if (mode === 'bot') return '1v1 Bot';
+    if (mode === 'twovtwo') return '2v2 Menschen vs Bots';
+    if (mode === 'training') return 'Training';
+    if (mode === 'practice' || mode === 'free') return 'Freies Spiel';
+    return '1v1 Tastatur';
+  }
+
+  function configureMode(selectedMode) {
+    mode = selectedMode;
+
+    // Modus-Setup wird nur beim Matchstart festgelegt. Danach gibt es im laufenden Spiel
+    // keinen Wechsel mehr; für einen anderen Modus muss komplett neu gestartet werden.
+    blue.active = true;
+    orange.active = selectedMode !== 'training';
+    blueBot.active = selectedMode === 'twovtwo';
+    orangeBot.active = selectedMode === 'twovtwo';
+
+    blue.isBot = false;
+    orange.isBot = selectedMode === 'bot';
+    blueBot.isBot = true;
+    orangeBot.isBot = true;
+
+    // Standard-Teams für 1v1 / Bot / Training.
+    blue.team = blueBot.team = 'blue';
+    orange.team = orangeBot.team = 'orange';
+    setCarLook(blue, '#00b7ff', '#bff4ff');
+    setCarLook(orange, '#ff8a1d', '#fff0b8');
+    setCarLook(blueBot, '#29c9ff', '#d8fbff');
+    setCarLook(orangeBot, '#ffa53c', '#fff2c7');
+
+    if (selectedMode === 'twovtwo') {
+      // Richtiges 2v2: beide echten Spieler sind Team Blau und spielen gegen zwei Bots in Team Orange.
+      blue.team = 'blue';
+      orange.team = 'blue';
+      blueBot.team = 'orange';
+      orangeBot.team = 'orange';
+      setCarLook(orange, '#38ddff', '#e4fbff');
+      setCarLook(blueBot, '#ff8a1d', '#fff0b8');
+      setCarLook(orangeBot, '#ffb044', '#fff3cf');
+      blueBot.name = 'Bot 1';
+      orangeBot.name = 'Bot 2';
+    } else {
+      blueBot.name = `${blue.name} Bot`.slice(0, 14);
+      orangeBot.name = `${orange.name} Bot`.slice(0, 14);
+    }
+
+    if (selectedMode === 'bot' && orange.name.toLowerCase() === 'orange') orange.name = 'Bot Orange';
+  }
+
+  function applyPlayerNames() {
+    blue.name = cleanPlayerName(blueNameInput.value, 'Blau');
+    orange.name = cleanPlayerName(orangeNameInput.value, 'Orange');
+    blueNameInput.value = blue.name;
+    orangeNameInput.value = orange.name;
+    if (mode === 'twovtwo') {
+      blueBot.name = 'Bot 1';
+      orangeBot.name = 'Bot 2';
+    } else {
+      blueBot.name = `${blue.name} Bot`.slice(0, 14);
+      orangeBot.name = `${orange.name} Bot`.slice(0, 14);
+    }
+    updateHud();
+  }
+
+  function cloneFrame(frame) {
+    const cloned = {
+      blue: { ...frame.blue },
+      orange: { ...frame.orange },
+      ball: { ...frame.ball }
+    };
+    if (frame.blueBot) cloned.blueBot = { ...frame.blueBot };
+    if (frame.orangeBot) cloned.orangeBot = { ...frame.orangeBot };
+    return cloned;
+  }
+
+  function makeReplayData() {
+    return {
+      type: 'rocket-league-2d-replay',
+      version: 2,
+      createdAt: new Date().toISOString(),
+      field: { width: W, height: H, wall: WALL, goalHeight: GOAL_H },
+      step: STEP,
+      playbackSeconds: REPLAY_PLAYBACK_SECONDS,
+      scorerName: replayScoringPlayer,
+      scorerSide: replayGoalSide,
+      lastTouch: replayLastTouch,
+      shotSpeed: replayShotSpeed,
+      shotSpeedText: formatShotSpeed(replayShotSpeed),
+      modeName: modeName(),
+      players: { blue: blue.name, orange: orange.name, blueBot: blueBot.name, orangeBot: orangeBot.name },
+      score: { blue: score.blue, orange: score.orange },
+      frames: replayFrames.map(cloneFrame)
+    };
+  }
+
+  function updateReplaySaveButton() {
+    if (!saveReplayBtn) return;
+    saveReplayBtn.disabled = !lastReplayData;
+    saveReplayBtn.textContent = lastReplayData ? 'Letzten Replay speichern' : 'Replay speichern';
+  }
+
+  function resetReplaySkipVotes() {
+    replaySkipBlue = false;
+    replaySkipOrange = false;
+  }
+
+  function isBlueBoostCode(code) {
+    return code === blue.controls.boost || code === blue.controls.boost2;
+  }
+
+  function isOrangeBoostCode(code) {
+    return code === orange.controls.boost || code === orange.controls.boost2;
+  }
+
+  function skipReplayNow() {
+    if (state !== 'replay' && state !== 'savedReplay') return;
+    if (state === 'savedReplay' || loadedReplayMode) {
+      state = 'menu';
+      loadedReplayMode = false;
+      menu.classList.remove('hidden');
+      hideBig();
+    } else {
+      finishGoalSequence();
+    }
+  }
+
+  function saveLastReplay() {
+    if (!lastReplayData) {
+      showBig('NOCH KEIN REPLAY');
+      setTimeout(() => { if (state === 'play') hideBig(); }, 650);
+      return;
+    }
+    const data = { ...lastReplayData, savedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const scorer = String(data.scorerName || 'goal').toLowerCase().replace(/[^a-z0-9_-]+/gi, '_');
+    const speed = Math.round((data.shotSpeed || 0) * .42);
+    a.href = url;
+    a.download = `rocket_league_2d_replay_${scorer}_${speed}kmh_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showBig('REPLAY GESPEICHERT');
+    setTimeout(() => { if (state === 'play' || state === 'menu') hideBig(); }, 750);
+  }
+
+  function openReplayPicker() {
+    replayFileInput.value = '';
+    replayFileInput.click();
+  }
+
+  function safeFrame(frame) {
+    if (!frame || !frame.blue || !frame.orange || !frame.ball) return null;
+    return cloneFrame(frame);
+  }
+
+  function playImportedReplay(data) {
+    if (!data || !Array.isArray(data.frames) || data.frames.length < 2) throw new Error('Ungültige Replay-Datei');
+    const frames = data.frames.map(safeFrame).filter(Boolean);
+    if (frames.length < 2) throw new Error('Replay enthält zu wenige Frames');
+
+    loadedReplayMode = true;
+    replayFrames = frames;
+    replayTimer = 0;
+    replayIndex = 0;
+    resetReplaySkipVotes();
+    replayGoalSide = data.scorerSide === 'blue' || data.scorerSide === 'orange' ? data.scorerSide : 'blue';
+    replayScoringPlayer = cleanPlayerName(data.scorerName || data.scoringPlayer, replayGoalSide === 'blue' ? 'Blau' : 'Orange');
+    replayLastTouch = cleanPlayerName(data.lastTouch, 'Kein Touch');
+    replayShotSpeed = Number(data.shotSpeed) || 0;
+
+    blueBot.active = frames.some(f => !!f.blueBot);
+    orangeBot.active = frames.some(f => !!f.orangeBot);
+    orange.isBot = false;
+    blue.isBot = false;
+    blueBot.isBot = true;
+    orangeBot.isBot = true;
+
+    if (data.players) {
+      blue.name = cleanPlayerName(data.players.blue, 'Blau');
+      orange.name = cleanPlayerName(data.players.orange, 'Orange');
+      blueBot.name = cleanPlayerName(data.players.blueBot, `${blue.name} Bot`);
+      orangeBot.name = cleanPlayerName(data.players.orangeBot, `${orange.name} Bot`);
+      blueNameInput.value = blue.name;
+      orangeNameInput.value = orange.name;
+    }
+    if (data.score) {
+      score.blue = Number(data.score.blue) || 0;
+      score.orange = Number(data.score.orange) || 0;
+    }
+
+    lastReplayData = { ...data, frames: replayFrames.map(cloneFrame), players: { blue: blue.name, orange: orange.name, blueBot: blueBot.name, orangeBot: orangeBot.name } };
+    updateReplaySaveButton();
+    menu.classList.add('hidden');
+    state = 'savedReplay';
+    restoreWorld(replayFrames[0]);
+    hideBig();
+    updateHud();
+  }
+
+  function ensureAudio() {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function beep(type = 'hit', strength = 1) {
+    if (muted || !audioCtx) return;
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+    const table = {
+      hit: [180, 80, .055], boost: [95, 160, .035], goal: [330, 620, .42], pad: [500, 900, .09], demo: [80, 35, .35], countdown: [500, 500, .08]
+    }[type] || [200, 120, .06];
+    osc.type = type === 'goal' ? 'sawtooth' : type === 'boost' ? 'triangle' : 'square';
+    filter.type = 'lowpass';
+    filter.frequency.value = type === 'goal' ? 1400 : 900;
+    osc.frequency.setValueAtTime(table[0], now);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(1, table[1]), now + table[2]);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.055 * clamp(strength, .25, 2.2), now + .01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + table[2]);
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + table[2] + .02);
+  }
+
+  function showBig(text, kind = '') {
+    bigText.textContent = text;
+    bigText.style.color = kind === 'blue' ? '#7ee7ff' : kind === 'orange' ? '#ffc07a' : '#fff2a6';
+    bigText.classList.add('show');
+  }
+
+  function hideBig() {
+    bigText.classList.remove('show');
+  }
+
+  function snapshotCar(car) {
+    return {
+      x: car.x, y: car.y, px: car.px, py: car.py,
+      vx: car.vx, vy: car.vy, angle: car.angle, av: car.av,
+      boost: car.boost, boosting: car.boosting, boostPower: car.boostPower,
+      throttleInput: car.throttleInput, steerInput: car.steerInput,
+      targetSpeed: car.targetSpeed, supersonic: car.supersonic,
+      demoed: car.demoed, demoTimer: car.demoTimer,
+      lastHit: car.lastHit, skid: car.skid
+    };
+  }
+
+  function restoreCar(car, snap) {
+    Object.assign(car, snap);
+  }
+
+  function snapshotBall() {
+    return {
+      x: ball.x, y: ball.y, px: ball.px, py: ball.py,
+      vx: ball.vx, vy: ball.vy, angle: ball.angle, spin: ball.spin,
+      lastTouch: ball.lastTouch, lastTouchTeam: ball.lastTouchTeam
+    };
+  }
+
+  function restoreBall(snap) {
+    Object.assign(ball, snap);
+  }
+
+  function snapshotWorld() {
+    const frame = {
+      blue: snapshotCar(blue),
+      orange: snapshotCar(orange),
+      ball: snapshotBall()
+    };
+    if (blueBot.active) frame.blueBot = snapshotCar(blueBot);
+    if (orangeBot.active) frame.orangeBot = snapshotCar(orangeBot);
+    return frame;
+  }
+
+  function restoreWorld(frame) {
+    if (!frame) return;
+    restoreCar(blue, frame.blue);
+    restoreCar(orange, frame.orange);
+    if (frame.blueBot) restoreCar(blueBot, frame.blueBot);
+    if (frame.orangeBot) restoreCar(orangeBot, frame.orangeBot);
+    restoreBall(frame.ball);
+  }
+
+  function recordReplayFrame() {
+    replayBuffer.push(snapshotWorld());
+    const maxFrames = Math.ceil(REPLAY_SECONDS / STEP);
+    while (replayBuffer.length > maxFrames) replayBuffer.shift();
+  }
+
+  function clearReplayBuffer() {
+    replayBuffer.length = 0;
+    replayFrames = [];
+    replayTimer = 0;
+    replayIndex = 0;
+    resetReplaySkipVotes();
+    replayScoringPlayer = '';
+    replayLastTouch = '';
+    replayShotSpeed = 0;
+  }
+
+  function prepareGoalReplay(name, side, shotSpeed) {
+    replayGoalName = name;
+    replayGoalSide = side;
+    replayScoringPlayer = name;
+    replayLastTouch = ball.lastTouch || 'Kein Touch';
+    replayShotSpeed = shotSpeed || hypot(ball.vx, ball.vy);
+    replayFrames = replayBuffer.map(cloneFrame);
+    replayFrames.push(snapshotWorld());
+    replayTimer = 0;
+    replayIndex = 0;
+    resetReplaySkipVotes();
+    loadedReplayMode = false;
+    lastReplayData = makeReplayData();
+    updateReplaySaveButton();
+  }
+
+  function formatShotSpeed(speed) {
+    // Spiel-Skala: px/s wird in einen arcadigen km/h-Wert umgerechnet.
+    return `${Math.round(speed * .42)} km/h`;
+  }
+
+  function finishGoalSequence() {
+    if (isTimedMode() && gameClock <= 0) {
+      state = 'ended';
+      const winner = score.blue === score.orange ? 'UNENTSCHIEDEN' : score.blue > score.orange ? 'BLAU GEWINNT' : 'ORANGE GEWINNT';
+      showBig(winner, score.blue > score.orange ? 'blue' : score.orange > score.blue ? 'orange' : '');
+    } else {
+      state = 'countdown';
+      resetRound(true);
+    }
+  }
+
+  function resetCar(car, x, y, angle) {
+    car.x = car.px = x;
+    car.y = car.py = y;
+    car.vx = car.vy = 0;
+    car.angle = angle;
+    car.av = 0;
+    car.boost = 100;
+    car.boosting = false;
+    car.boostPower = 0;
+    car.throttleInput = 0;
+    car.steerInput = 0;
+    car.targetSpeed = 0;
+    car.supersonic = 0;
+    car.demoed = false;
+    car.demoTimer = 0;
+    car.lastHit = 0;
+    car.skid = 0;
+  }
+
+  function resetBall(kickoff = true) {
+    ball.x = ball.px = W / 2;
+    ball.y = ball.py = H / 2;
+    ball.angle = 0;
+    ball.spin = 0;
+    ball.lastTouch = null;
+    ball.lastTouchTeam = null;
+    if (kickoff) {
+      const side = Math.random() < .5 ? -1 : 1;
+      ball.vx = side * rand(12, 40);
+      ball.vy = rand(-26, 26);
+    } else {
+      ball.vx = ball.vy = 0;
+    }
+  }
+
+  function resetRound(withCountdown = true) {
+    if (online.active) {
+      resetOnlineRound(withCountdown);
+      return;
+    }
+    if (mode === 'twovtwo') {
+      // 2 Spieler starten links als Team Blau; 2 Bots starten rechts als Team Orange.
+      resetCar(blue, 255, H / 2 - 82, 0);
+      resetCar(orange, 255, H / 2 + 82, 0);
+      resetCar(blueBot, W - 235, H / 2 - 92, Math.PI);
+      resetCar(orangeBot, W - 235, H / 2 + 92, Math.PI);
+    } else if (mode === 'training') {
+      resetCar(blue, W * .30, H / 2, 0);
+      resetCar(orange, W - 255, H / 2, Math.PI);
+      resetCar(blueBot, 210, H / 2 + 105, 0);
+      resetCar(orangeBot, W - 210, H / 2 - 105, Math.PI);
+    } else {
+      resetCar(blue, 255, H / 2, 0);
+      resetCar(orange, W - 255, H / 2, Math.PI);
+      resetCar(blueBot, 210, H / 2 + 105, 0);
+      resetCar(orangeBot, W - 210, H / 2 - 105, Math.PI);
+    }
+    resetBall(mode !== 'training');
+    particles.length = 0;
+    sparks.length = 0;
+    rings.length = 0;
+    trail.length = 0;
+    shake = 0;
+    slowMo = 0;
+    goalFreeze = 0;
+    clearReplayBuffer();
+    countdown = withCountdown ? 3.05 : 0;
+    if (withCountdown) showBig('3'); else hideBig();
+  }
+
+  function newMatch(selectedMode = 'keyboard') {
+    blue.controls = defaultBlueControls;
+    orange.controls = defaultOrangeControls;
+    online.active = false;
+    if (onlineStatus) onlineStatus.classList.add('hidden');
+    if (modeLocked && state !== 'menu') return;
+    applyPlayerNames();
+    loadedReplayMode = false;
+    configureMode(selectedMode);
+    modeLocked = true;
+    score.blue = 0;
+    score.orange = 0;
+    gameClock = isTimedMode() ? MATCH_TIME : 9999;
+    state = 'countdown';
+    menu.classList.add('hidden');
+    resetRound(true);
+    updateHud();
+    ensureAudio();
+  }
+
+  function fullReset() {
+    score.blue = 0;
+    score.orange = 0;
+    gameClock = isTimedMode() ? MATCH_TIME : 9999;
+    state = 'countdown';
+    resetRound(true);
+    updateHud();
+  }
+
+  document.getElementById('startBtn').addEventListener('click', () => newMatch('keyboard'));
+  document.getElementById('practiceBtn').addEventListener('click', () => newMatch('bot'));
+  document.getElementById('twovtwoBtn').addEventListener('click', () => newMatch('twovtwo'));
+  document.getElementById('trainingBtn').addEventListener('click', () => newMatch('training'));
+  saveReplayBtn.addEventListener('click', saveLastReplay);
+  loadReplayBtnTop.addEventListener('click', openReplayPicker);
+  loadReplayBtnMenu.addEventListener('click', openReplayPicker);
+  completeRestartBtn.addEventListener('click', () => window.location.reload());
+  blueNameInput.addEventListener('input', () => { blue.name = cleanPlayerName(blueNameInput.value, 'Blau'); updateHud(); });
+  orangeNameInput.addEventListener('input', () => { orange.name = cleanPlayerName(orangeNameInput.value, 'Orange'); updateHud(); });
+  replayFileInput.addEventListener('change', async e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      playImportedReplay(data);
+    } catch (err) {
+      console.error(err);
+      showBig('REPLAY DATEI FEHLER');
+      setTimeout(() => { if (state !== 'replay' && state !== 'savedReplay') hideBig(); }, 950);
+    }
+  });
+
+  window.addEventListener('keydown', e => {
+    ensureAudio();
+    keys.add(e.code);
+    if (['Space', 'Enter', 'NumpadEnter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+    if (state === 'replay' || state === 'savedReplay') {
+      if (isBlueBoostCode(e.code)) replaySkipBlue = true;
+      if (isOrangeBoostCode(e.code)) replaySkipOrange = true;
+      const needsOrangeVote = activeHumanCars().some(car => car === orange);
+      if (replaySkipBlue && (replaySkipOrange || !needsOrangeVote)) {
+        skipReplayNow();
+        return;
+      }
+    }
+    if (e.code === 'KeyR') fullReset();
+    if (e.code === 'KeyP' && state !== 'menu') {
+      state = state === 'paused' ? 'play' : 'paused';
+      if (state === 'paused') showBig('PAUSE'); else hideBig();
+    }
+    if (e.code === 'KeyM') {
+      muted = !muted;
+      showBig(muted ? 'MUTED' : 'SOUND');
+      setTimeout(() => { if (state === 'play') hideBig(); }, 450);
+    }
+    if (state === 'menu' && e.code === 'Enter') newMatch('keyboard');
+  }, { passive: false });
+
+  window.addEventListener('keyup', e => keys.delete(e.code));
+  window.addEventListener('blur', () => keys.clear());
+
+  function updateHud() {
+    scoreBlueEl.textContent = score.blue;
+    scoreOrangeEl.textContent = score.orange;
+    if (!isTimedMode()) {
+      timerEl.textContent = mode === 'training' ? 'TRAIN' : '∞';
+    } else {
+      const t = Math.max(0, Math.ceil(gameClock));
+      const m = Math.floor(t / 60);
+      const s = String(t % 60).padStart(2, '0');
+      timerEl.textContent = `${m}:${s}`;
+    }
+    blueBoostEl.style.width = `${blue.boost}%`;
+    orangeBoostEl.style.width = `${orange.boost}%`;
+    blueBoostText.textContent = Math.round(blue.boost);
+    orangeBoostText.textContent = Math.round(orange.boost);
+    blueBoostLabel.textContent = `${blue.name} Boost`;
+    orangeBoostLabel.textContent = `${orange.name} Boost`;
+  }
+
+  function update(dt) {
+    if (state === 'menu' || state === 'paused') return;
+    if (online.active && online.role === 'guest') {
+      updateHud();
+      return;
+    }
+
+    if (shake > 0) shake = Math.max(0, shake - dt * 18);
+    if (slowMo > 0) slowMo = Math.max(0, slowMo - dt);
+
+    if (state === 'countdown') {
+      countdown -= dt;
+      const n = Math.ceil(countdown);
+      if (countdown > 0) {
+        showBig(String(n));
+      } else {
+        showBig('LOS!');
+        beep('countdown', 1);
+        state = 'play';
+        setTimeout(() => { if (state === 'play') hideBig(); }, 450);
+      }
+      if (Math.abs(countdown - Math.round(countdown)) < dt) beep('countdown', .55);
+      updateParticles(dt);
+      return;
+    }
+
+    if (state === 'goal') {
+      goalFreeze -= dt;
+      updateParticles(dt * .55);
+      ball.x += ball.vx * dt * .22;
+      ball.y += ball.vy * dt * .22;
+      ball.vx *= Math.pow(.985, dt * 120);
+      ball.vy *= Math.pow(.985, dt * 120);
+      if (goalFreeze <= 0) {
+        if (replayFrames.length > 12) {
+          state = 'replay';
+          replayTimer = 0;
+          replayIndex = 0;
+          resetReplaySkipVotes();
+          hideBig();
+        } else {
+          finishGoalSequence();
+        }
+      }
+      return;
+    }
+
+    if (state === 'replay' || state === 'savedReplay') {
+      const imported = state === 'savedReplay' || loadedReplayMode;
+      replayTimer += dt;
+      const t = clamp(replayTimer / REPLAY_PLAYBACK_SECONDS, 0, 1);
+      replayIndex = Math.min(replayFrames.length - 1, Math.floor(t * (replayFrames.length - 1)));
+      restoreWorld(replayFrames[replayIndex]);
+      if (replayTimer >= REPLAY_PLAYBACK_SECONDS) {
+        if (imported) {
+          state = 'menu';
+          loadedReplayMode = false;
+          menu.classList.remove('hidden');
+          hideBig();
+        } else {
+          finishGoalSequence();
+        }
+      }
+      return;
+    }
+
+    if (state === 'ended') return;
+
+    if (isTimedMode()) {
+      gameClock = Math.max(0, gameClock - dt);
+      if (gameClock <= 0 && Math.abs(score.blue - score.orange) > 0) {
+        state = 'ended';
+        showBig(score.blue > score.orange ? 'BLAU GEWINNT' : 'ORANGE GEWINNT', score.blue > score.orange ? 'blue' : 'orange');
+        return;
+      }
+    }
+
+    const tdt = slowMo > 0 ? dt * .82 : dt;
+    for (const car of activeCars()) {
+      if (car.isBot) updateBotAI(car, tdt);
+      updateCar(car, tdt);
+    }
+    solveAllCarPairs(tdt);
+    updateBall(tdt);
+
+    for (let i = 0; i < 2; i++) {
+      for (const car of activeCars()) solveCarBall(car);
+      solveAllCarPairs(tdt);
+    }
+
+    handleBoostPads(tdt);
+    updateParticles(tdt);
+    if (state === 'play') recordReplayFrame();
+    updateHud();
+  }
+
+
+  function angleDiff(target, current) {
+    let d = target - current;
+    while (d > Math.PI) d -= Math.PI * 2;
+    while (d < -Math.PI) d += Math.PI * 2;
+    return d;
+  }
+
+  function solveAllCarPairs(dt) {
+    const list = activeCars();
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) solveCarCar(list[i], list[j], dt);
+    }
+  }
+
+  function updateBotAI(car, dt) {
+    const teamDir = car.team === 'blue' ? 1 : -1;
+    const ownGoalX = car.team === 'blue' ? FIELD_L + 70 : FIELD_R - 70;
+    const enemyGoalX = car.team === 'blue' ? FIELD_R - 80 : FIELD_L + 80;
+    const teammates = activeCars().filter(other => other !== car && other.team === car.team && !other.demoed);
+    const distCarBall = hypot(ball.x - car.x, ball.y - car.y);
+    const distMateBall = teammates.length
+      ? Math.min(...teammates.map(other => hypot(ball.x - other.x, ball.y - other.y)))
+      : 99999;
+    const ownDanger = car.team === 'blue' ? ball.x < W * .42 : ball.x > W * .58;
+
+    let tx = ball.x - teamDir * 82;
+    let ty = ball.y;
+
+    // Wenn der Teammate näher am Ball ist, nimmt der Bot eine Support-/Defense-Position ein.
+    if (mode === 'twovtwo' && distMateBall + 55 < distCarBall && !ownDanger) {
+      tx = lerp(ball.x, ownGoalX, .38);
+      ty = clamp(ball.y + (car.team === 'blue' ? 95 : -95), FIELD_T + 90, FIELD_B - 90);
+    }
+
+    // Bei Gefahr direkt zum Ball/Schusswinkel verteidigen.
+    if (ownDanger) {
+      tx = lerp(ball.x, ownGoalX, .18);
+      ty = lerp(ball.y, H / 2, .18);
+    }
+
+    // Wenn der Bot hinter dem Ball ist, darf er mehr Richtung Tor schieben.
+    const behindBall = car.team === 'blue' ? car.x < ball.x - 20 : car.x > ball.x + 20;
+    if (behindBall && distCarBall < 180) {
+      tx = ball.x;
+      ty = ball.y;
+    }
+
+    const dx = tx - car.x;
+    const dy = ty - car.y;
+    const desired = Math.atan2(dy, dx);
+    const diff = angleDiff(desired, car.angle);
+    const absDiff = Math.abs(diff);
+    const distance = hypot(dx, dy);
+
+    car.aiSteer = clamp(diff * 1.85, -1, 1);
+    car.aiThrottle = absDiff > 2.25 ? -0.55 : (absDiff > 1.15 ? .35 : 1);
+
+    const aimedAtBall = absDiff < .34;
+    const shotChance = aimedAtBall && behindBall && distCarBall < 370;
+    const chaseBoost = aimedAtBall && distance > 310 && car.boost > 28;
+    car.aiBoost = shotChance || chaseBoost ? 1 : 0;
+
+    // Kleine Bot-Fehler, damit es nicht wie Aimbot wirkt.
+    if (Math.random() < dt * 1.3) car.aiSteer = clamp(car.aiSteer + rand(-.08, .08), -1, 1);
+  }
+
+  function updateCar(car, dt) {
+    car.px = car.x;
+    car.py = car.y;
+
+    if (car.demoed) {
+      car.demoTimer -= dt;
+      car.boosting = false;
+      car.boostPower = 0;
+      if (car.demoTimer <= 0) {
+        const isBlueTeam = car.team === 'blue';
+        resetCar(car, isBlueTeam ? 255 : W - 255, H / 2 + rand(-64, 64), isBlueTeam ? 0 : Math.PI);
+        spawnRing(car.x, car.y, car.color, 1);
+      }
+      return;
+    }
+
+    const c = car.controls || blue.controls;
+    const net = car.netInput || { up: false, down: false, left: false, right: false, boost: false };
+    const rawThrottle = car.networkControlled
+      ? (net.up ? 1 : 0) + (net.down ? -1 : 0)
+      : car.isBot
+        ? clamp(car.aiThrottle || 0, -1, 1)
+        : (keys.has(c.up) ? 1 : 0) + (keys.has(c.down) ? -1 : 0);
+    const rawSteer = car.networkControlled
+      ? (net.right ? 1 : 0) + (net.left ? -1 : 0)
+      : car.isBot
+        ? clamp(car.aiSteer || 0, -1, 1)
+        : (keys.has(c.right) ? 1 : 0) + (keys.has(c.left) ? -1 : 0);
+
+    // Sanftere Eingaben: Dadurch fühlt sich das Auto präzise an, ohne kantig zu springen.
+    const throttleSnap = rawThrottle === 0 ? 15 : 20;
+    const steerSnap = rawSteer === 0 ? 18 : 24;
+    car.throttleInput = lerp(car.throttleInput, rawThrottle, 1 - Math.exp(-throttleSnap * dt));
+    car.steerInput = lerp(car.steerInput, rawSteer, 1 - Math.exp(-steerSnap * dt));
+
+    let speed = hypot(car.vx, car.vy);
+    const forwardX = Math.cos(car.angle);
+    const forwardY = Math.sin(car.angle);
+    const rightX = -forwardY;
+    const rightY = forwardX;
+    let forwardVel = car.vx * forwardX + car.vy * forwardY;
+    let sideVel = car.vx * rightX + car.vy * rightY;
+
+    const boostPressed = car.networkControlled
+      ? !!net.boost
+      : car.isBot
+        ? !!car.aiBoost
+        : (keys.has(c.boost) || (c.boost2 && keys.has(c.boost2)) || keys.has('Space'));
+    const boostHeld = boostPressed && car.boost > 0 && rawThrottle >= 0;
+    const boostTarget = boostHeld ? 1 : 0;
+
+    // Wichtig: Boost wird nicht mehr instant voll reingeschaltet, sondern weich hoch- und runtergefahren.
+    const boostRise = 4.4;   // niedriger = weicherer Turbo-Einstieg
+    const boostFall = 8.5;
+    car.boostPower = lerp(car.boostPower, boostTarget, 1 - Math.exp(-(boostTarget ? boostRise : boostFall) * dt));
+    if (!boostHeld && car.boost <= 0.05) car.boostPower = Math.min(car.boostPower, .12);
+    car.boosting = car.boostPower > .08 && boostHeld;
+
+    // Grip: bei wenig Speed sehr direkt, bei hohem Speed etwas mehr Slide statt hektischem Drehen.
+    const speedN = clamp(speed / 390, 0, 1);
+    const throttleAbs = Math.abs(car.throttleInput);
+    const baseGrip = lerp(13.5, 8.8, speedN);
+    const reverseGrip = rawThrottle < 0 ? 1.12 : 1;
+    const coastingGrip = rawThrottle === 0 ? .82 : 1;
+    const grip = baseGrip * reverseGrip * coastingGrip;
+    const sideDamping = Math.exp(-grip * dt);
+    car.vx -= rightX * sideVel * (1 - sideDamping);
+    car.vy -= rightY * sideVel * (1 - sideDamping);
+    car.skid = Math.abs(sideVel) / 310;
+
+    // Motorleistung mit Speed-Kurve. Rückwärts ist jetzt deutlich brauchbarer,
+    // aber noch kontrolliert begrenzt, damit es nicht wie ein zweiter Vorwärtsgang wirkt.
+    if (Math.abs(car.throttleInput) > .025) {
+      const drivingForward = car.throttleInput > 0;
+      const reverseSpeed = Math.max(0, -forwardVel);
+      const forwardSpeed = Math.max(0, forwardVel);
+      const accelBase = drivingForward ? 610 : 540;
+      const speedFade = drivingForward
+        ? lerp(1, .42, clamp(forwardSpeed / 360, 0, 1))
+        : lerp(1, .50, clamp(reverseSpeed / 245, 0, 1));
+      const directionChangeHelp = (!drivingForward && forwardVel > 25) || (drivingForward && forwardVel < -25) ? 1.18 : 1;
+      const engineForce = accelBase * car.throttleInput * speedFade * directionChangeHelp;
+      car.vx += forwardX * engineForce * dt;
+      car.vy += forwardY * engineForce * dt;
+    }
+
+    if (car.boostPower > .02) {
+      // Boost ist jetzt Zusatzschub statt Raketen-Sprung. Er skaliert weich mit boostPower.
+      const boostCurve = car.boostPower * car.boostPower * (3 - 2 * car.boostPower); // smoothstep
+      const boostForce = 520 + 180 * clamp(speed / 380, 0, 1);
+      car.vx += forwardX * boostForce * boostCurve * dt;
+      car.vy += forwardY * boostForce * boostCurve * dt;
+      car.boost = Math.max(0, car.boost - (24 + 9 * boostCurve) * boostCurve * dt);
+      spawnBoost(car, dt * (.35 + .75 * boostCurve));
+      if (Math.random() < .075 * boostCurve) beep('boost', .18 + boostCurve * .1);
+    } else {
+      car.boost = Math.min(car.maxBoost, car.boost + 4.5 * dt);
+    }
+
+    speed = hypot(car.vx, car.vy);
+    forwardVel = car.vx * forwardX + car.vy * forwardY;
+
+    // Präzisere Lenkung: A/D bzw. Pfeile drehen jetzt auch ohne W/S schnell genug.
+    // Damit fühlt sich Stand-/Low-Speed-Steering nicht mehr wie Slow Motion an.
+    const steeringOnly = rawSteer !== 0 && rawThrottle === 0;
+    const pivotAssist = steeringOnly ? lerp(1.55, 1.0, clamp(speed / 140, 0, 1)) : 1;
+    const steerSpeed = clamp(speed / 170, steeringOnly ? .62 : .34, 1);
+    const lowSpeedHelp = lerp(1.62, 1.0, clamp(speed / 190, 0, 1));
+    const highSpeedStability = lerp(1.0, .74, clamp((speed - 285) / 185, 0, 1));
+    const reverseFlip = forwardVel < -32 ? -0.88 : 1;
+    const turnRate = 3.55 * steerSpeed * lowSpeedHelp * highSpeedStability * reverseFlip * pivotAssist;
+    const turnSnap = steeringOnly ? 20 : 14;
+    car.av = lerp(car.av, car.steerInput * turnRate, 1 - Math.exp(-turnSnap * dt));
+    car.angle += car.av * dt;
+
+    // Harmonisches Speed-Limit: statt sofortigem Sprung von Normal-Speed zu Boost-Speed.
+    const normalMax = 360;
+    const boostMax = 438;
+    const wantedMax = lerp(normalMax, boostMax, car.boostPower);
+    car.targetSpeed = lerp(car.targetSpeed || normalMax, wantedMax, 1 - Math.exp(-5.2 * dt));
+
+    // Beim reinen Lenken soll das Auto nicht langsam weiterkriechen, sondern sauber rotieren.
+    const drag = rawThrottle === 0 ? (rawSteer !== 0 ? 2.15 : 1.75) : .72;
+    const boostDragRelief = lerp(1, .74, car.boostPower);
+    car.vx *= Math.exp(-drag * boostDragRelief * dt);
+    car.vy *= Math.exp(-drag * boostDragRelief * dt);
+
+    const ns = hypot(car.vx, car.vy);
+    if (ns > car.targetSpeed) {
+      // Weicher Cap statt hartem Abwürgen.
+      const over = ns - car.targetSpeed;
+      const soft = car.targetSpeed + over * Math.exp(-10 * dt);
+      car.vx *= soft / ns;
+      car.vy *= soft / ns;
+    }
+
+    const finalSpeed = hypot(car.vx, car.vy);
+    car.supersonic = Math.max(0, finalSpeed - 385) / 75;
+    car.x += car.vx * dt;
+    car.y += car.vy * dt;
+
+    constrainCar(car);
+
+    if (car.skid > .38 && speed > 135) {
+      const back = -Math.sign(sideVel || 1);
+      spawnSmoke(car.x + rightX * back * 16 - forwardX * 20, car.y + rightY * back * 16 - forwardY * 20, Math.min(1, car.skid));
+    }
+  }
+
+  function constrainCar(car) {
+    const r = car.radius;
+    const bounce = .33;
+    if (car.y < FIELD_T + r) { car.y = FIELD_T + r; car.vy = Math.abs(car.vy) * bounce; wallSpark(car.x, car.y, 0, 1); }
+    if (car.y > FIELD_B - r) { car.y = FIELD_B - r; car.vy = -Math.abs(car.vy) * bounce; wallSpark(car.x, car.y, 0, -1); }
+
+    const canEnterGoal = inGoalMouth(car.y);
+    const leftLimit = canEnterGoal ? FIELD_L - GOAL_DEPTH * .45 + r : FIELD_L + r;
+    const rightLimit = canEnterGoal ? FIELD_R + GOAL_DEPTH * .45 - r : FIELD_R - r;
+    if (car.x < leftLimit) { car.x = leftLimit; car.vx = Math.abs(car.vx) * bounce; wallSpark(car.x, car.y, 1, 0); }
+    if (car.x > rightLimit) { car.x = rightLimit; car.vx = -Math.abs(car.vx) * bounce; wallSpark(car.x, car.y, -1, 0); }
+
+    if (!canEnterGoal) {
+      if (car.x < FIELD_L + r) { car.x = FIELD_L + r; car.vx = Math.abs(car.vx) * bounce; }
+      if (car.x > FIELD_R - r) { car.x = FIELD_R - r; car.vx = -Math.abs(car.vx) * bounce; }
+    }
+  }
+
+  function updateBall(dt) {
+    ball.px = ball.x;
+    ball.py = ball.y;
+    ball.x += ball.vx * dt;
+    ball.y += ball.vy * dt;
+    ball.vx *= Math.exp(-.48 * dt);
+    ball.vy *= Math.exp(-.48 * dt);
+    ball.angle += ball.spin * dt;
+    ball.spin *= Math.exp(-1.6 * dt);
+
+    trail.push({ x: ball.x, y: ball.y, life: .24, r: ball.radius });
+    if (trail.length > 26) trail.shift();
+
+    const speed = hypot(ball.vx, ball.vy);
+    const restitution = .82;
+
+    if (ball.y - ball.radius < FIELD_T) {
+      ball.y = FIELD_T + ball.radius;
+      ball.vy = Math.abs(ball.vy) * restitution;
+      ball.spin += ball.vx * .012;
+      bump(speed / 420);
+      wallSpark(ball.x, ball.y, 0, 1);
+    }
+    if (ball.y + ball.radius > FIELD_B) {
+      ball.y = FIELD_B - ball.radius;
+      ball.vy = -Math.abs(ball.vy) * restitution;
+      ball.spin -= ball.vx * .012;
+      bump(speed / 420);
+      wallSpark(ball.x, ball.y, 0, -1);
+    }
+
+    if (ball.x - ball.radius < FIELD_L) {
+      if (inGoalMouth(ball.y) && mode !== 'training') {
+        const shotSpeed = hypot(ball.vx, ball.vy);
+        score.orange++;
+        triggerGoal(online.active ? getTeamGoalName('orange') : orange.name, 'orange', shotSpeed);
+      } else {
+        // Training: Tore lösen nichts aus. Der Ball bleibt einfach im Feld und kann weiter genutzt werden.
+        ball.x = FIELD_L + ball.radius;
+        ball.vx = Math.abs(ball.vx) * (mode === 'training' ? .68 : restitution);
+        ball.spin -= ball.vy * .012;
+        bump(mode === 'training' ? speed / 720 : speed / 420);
+        wallSpark(ball.x, ball.y, 1, 0);
+      }
+    }
+
+    if (ball.x + ball.radius > FIELD_R) {
+      if (inGoalMouth(ball.y) && mode !== 'training') {
+        const shotSpeed = hypot(ball.vx, ball.vy);
+        score.blue++;
+        triggerGoal(online.active ? getTeamGoalName('blue') : blue.name, 'blue', shotSpeed);
+      } else {
+        // Training: Tore lösen nichts aus. Der Ball bleibt einfach im Feld und kann weiter genutzt werden.
+        ball.x = FIELD_R - ball.radius;
+        ball.vx = -Math.abs(ball.vx) * (mode === 'training' ? .68 : restitution);
+        ball.spin += ball.vy * .012;
+        bump(mode === 'training' ? speed / 720 : speed / 420);
+        wallSpark(ball.x, ball.y, -1, 0);
+      }
+    }
+
+    applyAntiCornerAssist(dt);
+
+    const cap = 690;
+    const s2 = hypot(ball.vx, ball.vy);
+    if (s2 > cap) {
+      ball.vx *= cap / s2;
+      ball.vy *= cap / s2;
+    }
+  }
+
+  function applyAntiCornerAssist(dt) {
+    // Anti-Corner-Trap: Die Ecke wird physikalisch wie eine kleine, abgerundete Bande behandelt.
+    // So bleibt der Ball nicht mehr genau im 90°-Winkel kleben und rollt natürlicher zurück ins Feld.
+    const zone = 122;
+    const bevel = 88;
+    const side = ball.x < W / 2 ? 1 : -1;
+    const vert = ball.y < H / 2 ? 1 : -1;
+    const cornerX = side > 0 ? FIELD_L + ball.radius : FIELD_R - ball.radius;
+    const cornerY = vert > 0 ? FIELD_T + ball.radius : FIELD_B - ball.radius;
+    const dx = Math.abs(ball.x - cornerX);
+    const dy = Math.abs(ball.y - cornerY);
+
+    if (dx > zone || dy > zone) return;
+
+    const closeToSideGoalOpening = (ball.x < FIELD_L + zone || ball.x > FIELD_R - zone) && inGoalMouth(ball.y);
+    if (closeToSideGoalOpening) return;
+
+    const closeness = 1 - clamp((dx + dy) / (zone * 1.35), 0, 1);
+    const speed = hypot(ball.vx, ball.vy);
+    const inwardVelocity = ball.vx * side + ball.vy * vert;
+
+    const deadZone = bevel - (dx + dy);
+    if (deadZone > 0) {
+      const push = deadZone * .16;
+      ball.x += side * push;
+      ball.y += vert * push;
+    }
+
+    // Nur helfen, wenn der Ball langsam ist, in der Ecke klebt oder entlang der Wand festläuft.
+    if (closeness > .05 && (speed < 215 || inwardVelocity < 28 || deadZone > 0)) {
+      const assist = (240 + 460 * closeness) * dt;
+      ball.vx += side * assist;
+      ball.vy += vert * assist * .92;
+      ball.spin += side * vert * assist * .018;
+
+      if (speed < 78) {
+        ball.vx += side * 22 * closeness;
+        ball.vy += vert * 22 * closeness;
+      }
+
+      if (deadZone > 0 && Math.random() < .06) {
+        spawnRing(ball.x, ball.y, '#ffffff', .35 + closeness * .25);
+      }
+    }
+  }
+
+  function solveCarBall(car) {
+    if (car.demoed) return;
+    const dx = ball.x - car.x;
+    const dy = ball.y - car.y;
+    const d = len(dx, dy);
+    const minD = car.radius + ball.radius;
+    if (d >= minD) return;
+
+    const nx = dx / d;
+    const ny = dy / d;
+    const overlap = minD - d;
+
+    // Soft-Touch-Kontrolle: Der Ball wird sauber getrennt, aber bei kleinen Berührungen
+    // nicht mehr mit einer festen Mindest-Wucht weggeschossen. Das macht Dribbling möglich.
+    ball.x += nx * overlap * .78;
+    ball.y += ny * overlap * .78;
+    car.x -= nx * overlap * .10;
+    car.y -= ny * overlap * .10;
+
+    const rvx = ball.vx - car.vx;
+    const rvy = ball.vy - car.vy;
+    const rel = rvx * nx + rvy * ny;
+    const closing = Math.max(0, -rel);
+    const carSpeed = hypot(car.vx, car.vy);
+    const ballSpeed = hypot(ball.vx, ball.vy);
+    const forwardDot = Math.cos(car.angle) * nx + Math.sin(car.angle) * ny;
+    const forwardInfluence = Math.max(0, forwardDot);
+    const throttlePush = Math.max(0, car.throttleInput);
+    const boostPower = car.boostPower || 0;
+
+    // Ball-Annahme/Cushion: Wenn ein schneller Ball auf ein ruhiges Auto trifft,
+    // nimmt der Kontakt etwas Energie aus dem Ball statt ihn hart zurückzuschießen.
+    const receiveIntent = throttlePush < .45 && boostPower < .18 && carSpeed < 245 && closing > 48;
+    let receiveCushion = 0;
+    if (receiveIntent) {
+      const speedFactor = clamp((closing - 48) / 260, 0, 1);
+      const calmCarFactor = clamp((245 - carSpeed) / 245, 0, 1);
+      receiveCushion = speedFactor * calmCarFactor;
+      ball.vx += nx * closing * receiveCushion * .46;
+      ball.vy += ny * closing * receiveCushion * .46;
+      ball.spin *= lerp(1, .72, receiveCushion);
+    }
+
+    const smooth = t => t * t * (3 - 2 * t);
+    const softTouch = 1 - smooth(clamp((closing - 38) / 150, 0, 1));
+    const speedShot = smooth(clamp((carSpeed - 190) / 210, 0, 1));
+    const boostShot = boostPower * smooth(clamp((carSpeed - 160) / 250, 0, 1));
+
+    // Statt +150 Mindestimpuls: leichte Kontakte bleiben leicht, harte Hits bleiben stark.
+    let impulse =
+      closing * lerp(.42, 1.18, 1 - softTouch) +
+      carSpeed * lerp(.045, .20, speedShot) * forwardInfluence +
+      throttlePush * forwardInfluence * lerp(12, 46, 1 - softTouch) +
+      speedShot * 62 +
+      boostShot * 82;
+
+    impulse *= lerp(1, .48, receiveCushion);
+
+    // Wenn Auto und Ball fast gleich schnell laufen, den Ball eher mitnehmen statt wegballern.
+    if (softTouch > .55 && forwardInfluence > .25) {
+      const carNormal = car.vx * nx + car.vy * ny;
+      const ballNormal = ball.vx * nx + ball.vy * ny;
+      const targetNormal = Math.max(ballNormal, carNormal + 18 + throttlePush * 26);
+      const gentleDelta = clamp(targetNormal - ballNormal, 0, 95);
+      impulse += gentleDelta * .34;
+
+      // Kleiner Velocity-Blend gibt dem Ball ein kontrollierbares Dribbel-Gefühl.
+      const blend = .06 + softTouch * .08;
+      ball.vx = lerp(ball.vx, car.vx * .78 + nx * 42, blend);
+      ball.vy = lerp(ball.vy, car.vy * .78 + ny * 42, blend);
+    }
+
+    impulse = clamp(impulse, 8, 390 + boostShot * 95);
+
+    ball.vx += nx * impulse;
+    ball.vy += ny * impulse;
+
+    // Bei leichten Kontakten verliert das Auto kaum Momentum, bei Schüssen mehr.
+    const carKickback = lerp(.035, .105, 1 - softTouch);
+    car.vx -= nx * impulse * carKickback;
+    car.vy -= ny * impulse * carKickback;
+
+    const tangent = (-ny * car.vx + nx * car.vy) * lerp(.010, .020, 1 - softTouch);
+    ball.spin += tangent;
+    ball.lastTouch = car.name;
+    ball.lastTouchTeam = car.team;
+    car.lastHit = .16;
+
+    const effectPower = clamp(impulse / 430, .08, 1.25);
+    if (receiveCushion > .22) spawnRing(ball.x, ball.y, car.color, .28 + receiveCushion * .35);
+    bump(effectPower * lerp(.10, .95, 1 - softTouch) * lerp(1, .55, receiveCushion));
+    spawnHit(ball.x - nx * ball.radius, ball.y - ny * ball.radius, car.color, effectPower);
+    beep('hit', impulse / 380);
+  }
+
+  function solveCarCar(a, b, dt) {
+    if (a.demoed || b.demoed) return;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const d = len(dx, dy);
+    const minD = a.radius + b.radius;
+    if (d >= minD) return;
+
+    const nx = dx / d;
+    const ny = dy / d;
+    const overlap = minD - d;
+    a.x -= nx * overlap * .5;
+    a.y -= ny * overlap * .5;
+    b.x += nx * overlap * .5;
+    b.y += ny * overlap * .5;
+
+    const av = hypot(a.vx, a.vy);
+    const bv = hypot(b.vx, b.vy);
+    const aN = a.vx * nx + a.vy * ny;
+    const bN = b.vx * nx + b.vy * ny;
+    const rel = aN - bN;
+    const hitPower = Math.abs(rel) + av * .18 + bv * .18;
+
+    const sameTeam = a.team && b.team && a.team === b.team;
+    const aForward = Math.cos(a.angle) * nx + Math.sin(a.angle) * ny;
+    const bForward = -(Math.cos(b.angle) * nx + Math.sin(b.angle) * ny);
+
+    // Team-Demos deaktiviert: In 2v2 können Spieler ihren eigenen Teammate
+    // nicht mehr zerstören. Gleiches gilt für Bot-Teammates. Teammates prallen
+    // nur sanft voneinander ab, Gegner können weiterhin demos bekommen.
+    if (!sameTeam) {
+      const aCanDemo = a.boosting && av > 382 && aForward > .46 && hitPower > 185;
+      const bCanDemo = b.boosting && bv > 382 && bForward > .46 && hitPower > 185;
+
+      if (aCanDemo && !bCanDemo) return demo(b, a);
+      if (bCanDemo && !aCanDemo) return demo(a, b);
+    }
+
+    const teammateSoftness = sameTeam ? .58 : 1;
+    const impulse = Math.max(sameTeam ? 42 : 80, hitPower * .95 * teammateSoftness);
+    a.vx -= nx * impulse * dt * 9;
+    a.vy -= ny * impulse * dt * 9;
+    b.vx += nx * impulse * dt * 9;
+    b.vy += ny * impulse * dt * 9;
+    a.av -= ny * .5;
+    b.av += nx * .5;
+    bump(clamp(hitPower / 470, .25, 1));
+    spawnHit((a.x + b.x) / 2, (a.y + b.y) / 2, '#ffffff', hitPower / 500);
+    beep('hit', hitPower / 450);
+  }
+
+  function handleBoostPads(dt) {
+    for (const pad of boostPads) {
+      if (!pad.active) {
+        pad.respawn -= dt;
+        if (pad.respawn <= 0) {
+          pad.active = true;
+          spawnRing(pad.x, pad.y, '#ffd447', .8);
+        }
+        continue;
+      }
+      for (const car of activeCars()) {
+        if (car.demoed || car.boost >= 99.5) continue;
+        const touch = hypot(car.x - pad.x, car.y - pad.y) < (pad.big ? 49 : 38);
+        if (touch) {
+          car.boost = Math.min(100, car.boost + pad.value);
+          pad.active = false;
+          pad.respawn = pad.maxRespawn;
+          spawnRing(pad.x, pad.y, '#ffd447', pad.big ? 1.3 : .8);
+          beep('pad', pad.big ? 1.2 : .72);
+          break;
+        }
+      }
+    }
+  }
+
+  function triggerGoal(name, side, shotSpeed = hypot(ball.vx, ball.vy)) {
+    if (state === 'goal' || state === 'replay') return;
+    const scoringName = ball.lastTouch && ball.lastTouchTeam === side ? ball.lastTouch : name;
+    prepareGoalReplay(scoringName, side, shotSpeed);
+    state = 'goal';
+    goalFreeze = 1.35;
+    showBig(`TOR ${scoringName}!`, side);
+    shake = 1.5;
+    slowMo = .55;
+    updateHud();
+    spawnGoalBurst(ball.x, ball.y, side === 'blue' ? blue.color : orange.color);
+    beep('goal', 1.6);
+  }
+
+  function demo(victim, attacker) {
+    victim.demoed = true;
+    victim.demoTimer = 1.6;
+    victim.vx = victim.vy = 0;
+    victim.av = 0;
+    shake = 1.1;
+    slowMo = .18;
+    spawnExplosion(victim.x, victim.y, attacker.color);
+    beep('demo', 1.4);
+  }
+
+  function bump(amount = .35) {
+    shake = Math.max(shake, clamp(amount, .08, 1.2));
+  }
+
+  function spawnParticle(x, y, vx, vy, life, size, color, type = 'dot') {
+    particles.push({ x, y, vx, vy, life, maxLife: life, size, color, type, rot: rand(0, Math.PI * 2), vr: rand(-5, 5) });
+  }
+
+  function spawnBoost(car, dt) {
+    const fx = Math.cos(car.angle);
+    const fy = Math.sin(car.angle);
+    const rx = -fy;
+    const ry = fx;
+    const count = Math.ceil(70 * dt);
+    for (let i = 0; i < count; i++) {
+      const side = rand(-12, 12);
+      const x = car.x - fx * 34 + rx * side;
+      const y = car.y - fy * 34 + ry * side;
+      spawnParticle(x, y, -fx * rand(170, 260) + rand(-25, 25), -fy * rand(170, 260) + rand(-25, 25), rand(.18, .34), rand(3, 8), Math.random() < .55 ? '#ffd447' : car.color, 'flame');
+    }
+  }
+
+  function spawnSmoke(x, y, strength) {
+    if (Math.random() > .28) return;
+    spawnParticle(x, y, rand(-18, 18), rand(-18, 18), rand(.28, .5), rand(5, 10) * strength, 'rgba(225,235,255,.5)', 'smoke');
+  }
+
+  function spawnHit(x, y, color, strength) {
+    const n = Math.floor(8 + clamp(strength, .2, 1.8) * 14);
+    for (let i = 0; i < n; i++) {
+      const a = rand(0, Math.PI * 2);
+      const s = rand(70, 270) * clamp(strength, .3, 1.8);
+      spawnParticle(x, y, Math.cos(a) * s, Math.sin(a) * s, rand(.13, .34), rand(2, 5), Math.random() < .45 ? '#ffffff' : color, 'spark');
+    }
+  }
+
+  function wallSpark(x, y, nx, ny) {
+    if (Math.random() > .65) return;
+    for (let i = 0; i < 5; i++) {
+      spawnParticle(x, y, nx * rand(50, 145) + rand(-24, 24), ny * rand(50, 145) + rand(-24, 24), rand(.12, .25), rand(2, 4), '#dff7ff', 'spark');
+    }
+  }
+
+  function spawnExplosion(x, y, color) {
+    for (let i = 0; i < 76; i++) {
+      const a = rand(0, Math.PI * 2);
+      const s = rand(80, 410);
+      spawnParticle(x, y, Math.cos(a) * s, Math.sin(a) * s, rand(.28, .85), rand(3, 12), Math.random() < .35 ? '#fff0a0' : color, Math.random() < .5 ? 'spark' : 'flame');
+    }
+    spawnRing(x, y, color, 1.7);
+  }
+
+  function spawnGoalBurst(x, y, color) {
+    for (let i = 0; i < 130; i++) {
+      const a = rand(0, Math.PI * 2);
+      const s = rand(70, 520);
+      spawnParticle(x, y, Math.cos(a) * s, Math.sin(a) * s, rand(.45, 1.25), rand(3, 12), Math.random() < .35 ? '#ffffff' : color, Math.random() < .4 ? 'spark' : 'flame');
+    }
+    spawnRing(x, y, color, 2.5);
+    spawnRing(x, y, '#ffffff', 1.2);
+  }
+
+  function spawnRing(x, y, color, scale = 1) {
+    rings.push({ x, y, r: 6, life: .55 * scale, maxLife: .55 * scale, color, scale });
+  }
+
+  function updateParticles(dt) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life -= dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= Math.exp(-4.5 * dt);
+      p.vy *= Math.exp(-4.5 * dt);
+      p.rot += p.vr * dt;
+      if (p.type === 'smoke') p.size += 18 * dt;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+    for (let i = rings.length - 1; i >= 0; i--) {
+      const r = rings[i];
+      r.life -= dt;
+      r.r += 380 * dt * r.scale;
+      if (r.life <= 0) rings.splice(i, 1);
+    }
+    for (let i = trail.length - 1; i >= 0; i--) {
+      trail[i].life -= dt;
+      if (trail[i].life <= 0) trail.splice(i, 1);
+    }
+    blue.lastHit = Math.max(0, blue.lastHit - dt);
+    orange.lastHit = Math.max(0, orange.lastHit - dt);
+  }
+
+  function draw() {
+    ctx.save();
+    ctx.clearRect(0, 0, W, H);
+
+    if (shake > .01) {
+      const s = shake * 8;
+      ctx.translate(rand(-s, s), rand(-s, s));
+    }
+
+    drawArena();
+    drawPads();
+    drawTrails();
+    drawParticles(false);
+    drawBall();
+    for (const car of activeCars()) drawCar(car);
+    drawParticles(true);
+    drawRings();
+    drawReplayOverlay();
+    drawVignette();
+
+    ctx.restore();
+  }
+
+  function drawArena() {
+    ctx.fillStyle = '#07151c';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.save();
+    roundedRect(FIELD_L, FIELD_T, FIELD_R - FIELD_L, FIELD_B - FIELD_T, 26);
+    ctx.clip();
+
+    // Komplett grünes Feld ohne schräge Streifen.
+    ctx.fillStyle = '#11733a';
+    ctx.fillRect(FIELD_L, FIELD_T, FIELD_R - FIELD_L, FIELD_B - FIELD_T);
+
+    // Nur klassische Fußballfeld-Linien.
+    ctx.strokeStyle = 'rgba(255,255,255,.78)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([]);
+    ctx.strokeRect(FIELD_L + 18, FIELD_T + 18, FIELD_R - FIELD_L - 36, FIELD_B - FIELD_T - 36);
+
+    ctx.beginPath();
+    ctx.moveTo(W / 2, FIELD_T + 18);
+    ctx.lineTo(W / 2, FIELD_B - 18);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(W / 2, H / 2, 72, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(W / 2, H / 2, 7, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,.78)';
+    ctx.fill();
+
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(255,255,255,.55)';
+    ctx.strokeRect(FIELD_L + 18, GOAL_TOP - 55, 138, GOAL_H + 110);
+    ctx.strokeRect(FIELD_R - 156, GOAL_TOP - 55, 138, GOAL_H + 110);
+    ctx.strokeRect(FIELD_L + 18, GOAL_TOP + 18, 58, GOAL_H - 36);
+    ctx.strokeRect(FIELD_R - 76, GOAL_TOP + 18, 58, GOAL_H - 36);
+
+    // Eckmarkierungen wie Fußballfeld, keine schrägen Deko-Streifen.
+    const cr = 22;
+    ctx.beginPath(); ctx.arc(FIELD_L + 18, FIELD_T + 18, cr, 0, Math.PI / 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(FIELD_R - 18, FIELD_T + 18, cr, Math.PI / 2, Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(FIELD_L + 18, FIELD_B - 18, cr, -Math.PI / 2, 0); ctx.stroke();
+    ctx.beginPath(); ctx.arc(FIELD_R - 18, FIELD_B - 18, cr, Math.PI, Math.PI * 1.5); ctx.stroke();
+
+    ctx.restore();
+
+    drawWalls();
+    drawGoalArea('left', orange.color);
+    drawGoalArea('right', blue.color);
+  }
+
+  function drawWalls() {
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = 'rgba(255,255,255,.12)';
+    ctx.strokeStyle = 'rgba(215,235,255,.55)';
+    ctx.lineWidth = 12;
+
+    ctx.beginPath();
+    ctx.moveTo(FIELD_L + 26, FIELD_T);
+    ctx.lineTo(FIELD_R - 26, FIELD_T);
+    ctx.quadraticCurveTo(FIELD_R, FIELD_T, FIELD_R, FIELD_T + 26);
+    ctx.lineTo(FIELD_R, GOAL_TOP - 8);
+    ctx.moveTo(FIELD_R, GOAL_BOTTOM + 8);
+    ctx.lineTo(FIELD_R, FIELD_B - 26);
+    ctx.quadraticCurveTo(FIELD_R, FIELD_B, FIELD_R - 26, FIELD_B);
+    ctx.lineTo(FIELD_L + 26, FIELD_B);
+    ctx.quadraticCurveTo(FIELD_L, FIELD_B, FIELD_L, FIELD_B - 26);
+    ctx.lineTo(FIELD_L, GOAL_BOTTOM + 8);
+    ctx.moveTo(FIELD_L, GOAL_TOP - 8);
+    ctx.lineTo(FIELD_L, FIELD_T + 26);
+    ctx.quadraticCurveTo(FIELD_L, FIELD_T, FIELD_L + 26, FIELD_T);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawGoalArea(side, color) {
+    const isLeft = side === 'left';
+    const x = isLeft ? FIELD_L - GOAL_DEPTH : FIELD_R;
+    ctx.save();
+    const g = ctx.createLinearGradient(isLeft ? x : x + GOAL_DEPTH, H / 2, isLeft ? FIELD_L : FIELD_R, H / 2);
+    g.addColorStop(0, 'rgba(255,255,255,.04)');
+    g.addColorStop(1, color + '55');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, GOAL_TOP, GOAL_DEPTH, GOAL_H);
+    ctx.strokeStyle = color;
+    ctx.shadowBlur = 22;
+    ctx.shadowColor = color;
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    if (isLeft) {
+      ctx.moveTo(FIELD_L, GOAL_TOP);
+      ctx.lineTo(FIELD_L - GOAL_DEPTH, GOAL_TOP);
+      ctx.lineTo(FIELD_L - GOAL_DEPTH, GOAL_BOTTOM);
+      ctx.lineTo(FIELD_L, GOAL_BOTTOM);
+    } else {
+      ctx.moveTo(FIELD_R, GOAL_TOP);
+      ctx.lineTo(FIELD_R + GOAL_DEPTH, GOAL_TOP);
+      ctx.lineTo(FIELD_R + GOAL_DEPTH, GOAL_BOTTOM);
+      ctx.lineTo(FIELD_R, GOAL_BOTTOM);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawCornerBumpers() {
+    ctx.save();
+    ctx.globalAlpha = .52;
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = 'rgba(255,255,255,.22)';
+    const size = 98;
+    const corners = [
+      [FIELD_L + 22, FIELD_T + size, FIELD_L + size, FIELD_T + 22],
+      [FIELD_R - 22, FIELD_T + size, FIELD_R - size, FIELD_T + 22],
+      [FIELD_L + 22, FIELD_B - size, FIELD_L + size, FIELD_B - 22],
+      [FIELD_R - 22, FIELD_B - size, FIELD_R - size, FIELD_B - 22]
+    ];
+    for (const [x1, y1, x2, y2] of corners) {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawPads() {
+    for (const pad of boostPads) {
+      const pulse = .5 + Math.sin(performance.now() / 160 + pad.x) * .5;
+      if (!pad.active) {
+        const ready = 1 - clamp(pad.respawn / pad.maxRespawn, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = .16 + ready * .18;
+        ctx.strokeStyle = '#ffd447';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(pad.x, pad.y, (pad.big ? 29 : 20) * (1 + ready * .25), -Math.PI / 2, -Math.PI / 2 + ready * Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+        continue;
+      }
+      ctx.save();
+      ctx.translate(pad.x, pad.y);
+      ctx.rotate(performance.now() / (pad.big ? 800 : 1100));
+      ctx.shadowBlur = 20 + pulse * 12;
+      ctx.shadowColor = '#ffd447';
+      ctx.fillStyle = pad.big ? '#ffd447' : '#ffbf32';
+      ctx.strokeStyle = '#fff7bb';
+      ctx.lineWidth = 2;
+      const r = pad.big ? 25 + pulse * 3 : 16 + pulse * 2;
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = i * Math.PI / 3;
+        const rr = i % 2 ? r * .66 : r;
+        ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawTrails() {
+    for (const t of trail) {
+      const a = t.life / .24;
+      ctx.save();
+      ctx.globalAlpha = a * .18;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.r * (1 + (1 - a) * .9), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawBall() {
+    ctx.save();
+    const speed = hypot(ball.vx, ball.vy);
+    ctx.translate(ball.x, ball.y);
+    ctx.rotate(ball.angle);
+    ctx.shadowBlur = 20 + clamp(speed / 18, 0, 24);
+    ctx.shadowColor = 'rgba(255,255,255,.45)';
+    const g = ctx.createRadialGradient(-7, -8, 3, 0, 0, ball.radius + 7);
+    g.addColorStop(0, '#ffffff');
+    g.addColorStop(.55, '#dce8f5');
+    g.addColorStop(1, '#73889d');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, ball.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(7,12,20,.75)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(7,12,20,.32)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, ball.radius * .58, 0, Math.PI * 2);
+    ctx.stroke();
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(Math.cos(i * 2.09) * ball.radius, Math.sin(i * 2.09) * ball.radius);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawCar(car) {
+    if (car.demoed) {
+      ctx.save();
+      ctx.globalAlpha = .25 + Math.sin(performance.now() / 80) * .08;
+      drawGhost(car);
+      ctx.restore();
+      return;
+    }
+
+    ctx.save();
+    ctx.translate(car.x, car.y);
+    ctx.rotate(car.angle);
+
+    const glow = car.boosting ? 26 : car.lastHit > 0 ? 18 : 10;
+    ctx.shadowBlur = glow;
+    ctx.shadowColor = car.color;
+
+    roundedRect(-car.width / 2, -car.height / 2, car.width, car.height, 12);
+    const body = ctx.createLinearGradient(-34, -18, 34, 18);
+    body.addColorStop(0, car.color);
+    body.addColorStop(.52, car.accent);
+    body.addColorStop(1, car.color);
+    ctx.fillStyle = body;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    ctx.strokeStyle = 'rgba(255,255,255,.76)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(2,7,12,.7)';
+    roundedRect(2, -13, 22, 26, 7);
+    ctx.fill();
+
+    ctx.fillStyle = '#06101b';
+    for (const wy of [-22, 14]) {
+      roundedRect(-24, wy, 16, 8, 3);
+      ctx.fill();
+      roundedRect(12, wy, 16, 8, 3);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,.82)';
+    ctx.beginPath();
+    ctx.moveTo(35, 0);
+    ctx.lineTo(23, -10);
+    ctx.lineTo(25, 10);
+    ctx.closePath();
+    ctx.fill();
+
+    if (car.boosting) {
+      const flicker = rand(.8, 1.2);
+      ctx.shadowBlur = 22;
+      ctx.shadowColor = '#ffd447';
+      const flame = ctx.createLinearGradient(-34, 0, -70, 0);
+      flame.addColorStop(0, '#ffffff');
+      flame.addColorStop(.25, '#ffd447');
+      flame.addColorStop(1, car.color);
+      ctx.fillStyle = flame;
+      ctx.beginPath();
+      ctx.moveTo(-34, -11);
+      ctx.lineTo(-68 * flicker, 0);
+      ctx.lineTo(-34, 11);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    if (car.supersonic > .2) {
+      ctx.globalAlpha = clamp(car.supersonic, 0, 1) * .34;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(-46 - i * 12, -18 + i * 18);
+        ctx.lineTo(-82 - i * 16, -18 + i * 18);
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = '900 13px Inter, Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(0,0,0,.55)';
+    ctx.fillStyle = car.color;
+    ctx.strokeText(car.name, car.x, car.y - car.radius - 18);
+    ctx.fillText(car.name, car.x, car.y - car.radius - 18);
+    ctx.restore();
+  }
+
+  function drawGhost(car) {
+    ctx.save();
+    ctx.translate(car.x, car.y);
+    ctx.rotate(car.angle);
+    ctx.strokeStyle = car.color;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([7, 7]);
+    roundedRect(-car.width / 2, -car.height / 2, car.width, car.height, 12);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawParticles(onTop) {
+    for (const p of particles) {
+      const a = clamp(p.life / p.maxLife, 0, 1);
+      if (onTop !== (p.type === 'spark')) continue;
+      ctx.save();
+      ctx.globalAlpha = p.type === 'smoke' ? a * .38 : a;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.shadowBlur = p.type === 'spark' || p.type === 'flame' ? 12 : 0;
+      ctx.shadowColor = p.color;
+      if (p.type === 'spark') {
+        roundedRect(-p.size * 1.6, -p.size * .35, p.size * 3.2, p.size * .7, p.size);
+        ctx.fill();
+      } else {
+        ctx.beginPath();
+        ctx.arc(0, 0, p.size * (1 + (1 - a) * .35), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawRings() {
+    for (const r of rings) {
+      const a = clamp(r.life / r.maxLife, 0, 1);
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.strokeStyle = r.color;
+      ctx.shadowBlur = 16;
+      ctx.shadowColor = r.color;
+      ctx.lineWidth = 4 * a;
+      ctx.beginPath();
+      ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawReplayOverlay() {
+    if (state !== 'replay' && state !== 'savedReplay') return;
+
+    const progress = replayFrames.length > 1 ? replayIndex / (replayFrames.length - 1) : 0;
+    ctx.save();
+    ctx.globalAlpha = .94;
+    ctx.fillStyle = 'rgba(5,8,20,.62)';
+    roundedRect(W / 2 - 285, FIELD_T + 16, 570, 112, 20);
+    ctx.fill();
+    ctx.strokeStyle = replayGoalSide === 'blue' ? blue.color : orange.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 20px Inter, Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${state === 'savedReplay' ? 'GELADENER REPLAY' : 'REPLAY'} • TOR FÜR ${replayScoringPlayer.toUpperCase()}`, W / 2, FIELD_T + 45);
+
+    ctx.font = '800 14px Inter, Arial';
+    ctx.fillStyle = 'rgba(244,247,255,.82)';
+    ctx.fillText(`Letzter Touch: ${replayLastTouch}  •  Ball-Speed: ${formatShotSpeed(replayShotSpeed)}`, W / 2, FIELD_T + 70);
+
+    ctx.globalAlpha = .75;
+    ctx.fillStyle = 'rgba(255,255,255,.18)';
+    ctx.font = '800 12px Inter, Arial';
+    const blueSkip = replaySkipBlue ? '✓' : '…';
+    const orangeSkip = replaySkipOrange ? '✓' : '…';
+    ctx.fillStyle = 'rgba(244,247,255,.76)';
+    const skipText = activeHumanCars().some(car => car === orange)
+      ? `Skip: ${blue.name} Shift ${blueSkip}  +  ${orange.name} Enter ${orangeSkip}`
+      : `Skip: ${blue.name} Shift ${blueSkip}`;
+    ctx.fillText(skipText, W / 2, FIELD_T + 94);
+
+    ctx.globalAlpha = .75;
+    ctx.fillStyle = 'rgba(255,255,255,.18)';
+    roundedRect(W / 2 - 210, FIELD_T + 108, 420, 7, 99);
+    ctx.fill();
+    ctx.fillStyle = replayGoalSide === 'blue' ? blue.color : orange.color;
+    roundedRect(W / 2 - 210, FIELD_T + 108, 420 * progress, 7, 99);
+    ctx.fill();
+
+    if (replayFrames.length > 8) {
+      ctx.globalAlpha = .22;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      const start = Math.max(0, replayIndex - 70);
+      for (let i = start; i <= replayIndex; i++) {
+        const f = replayFrames[i];
+        if (!f) continue;
+        if (i === start) ctx.moveTo(f.ball.x, f.ball.y);
+        else ctx.lineTo(f.ball.x, f.ball.y);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawVignette() {
+    const g = ctx.createRadialGradient(W / 2, H / 2, 120, W / 2, H / 2, 760);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, 'rgba(0,0,0,.28)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function roundedRect(x, y, w, h, r) {
+    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function loop(now) {
+    const frameDt = Math.min(.05, (now - last) / 1000);
+    last = now;
+    acc += frameDt;
+    let safety = 0;
+    while (acc >= STEP && safety++ < 8) {
+      update(STEP);
+      acc -= STEP;
+    }
+    draw();
+    sendOnlineSnapshot();
+    requestAnimationFrame(loop);
+  }
+
+
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  }
+
+  function onlineMsg(text) {
+    if (onlineMessage) onlineMessage.textContent = text;
+  }
+
+  function setOnlineStep(text) {
+    if (onlineStepBadge) onlineStepBadge.textContent = text;
+  }
+
+  function showOnlineScreen(which) {
+    nameGate?.classList.toggle('hidden', which !== 'name');
+    roomBrowser?.classList.toggle('hidden', which !== 'browser');
+    lobbyScreen?.classList.toggle('hidden', which !== 'lobby');
+    if (which === 'name') setOnlineStep('Schritt 1: Name');
+    if (which === 'browser') setOnlineStep('Schritt 2: Raum');
+    if (which === 'lobby') setOnlineStep('Schritt 3: Ready');
+  }
+
+  function getOnlineName() {
+    const source = onlineNameInput?.value || blueNameInput?.value || 'Spieler';
+    const v = cleanPlayerName(source, 'Spieler');
+    if (onlineNameInput) onlineNameInput.value = v;
+    if (blueNameInput) blueNameInput.value = v;
+    if (currentNameText) currentNameText.textContent = v;
+    if (lobbyNameText) lobbyNameText.textContent = v;
+    return v;
+  }
+
+  function hasOnlineName(showError = true) {
+    const raw = String(onlineNameInput?.value || '').trim();
+    if (raw.length < 2) {
+      online.playerNameSet = false;
+      if (showError) {
+        showOnlineScreen('name');
+        onlineMsg('Bitte zuerst deinen Namen eingeben. Mindestens 2 Zeichen.');
+        onlineNameInput?.focus();
+      }
+      return false;
+    }
+    return true;
+  }
+
+  function confirmOnlineName() {
+    if (!hasOnlineName(true)) return false;
+    const name = getOnlineName();
+    online.playerNameSet = true;
+    try { localStorage.setItem('rl2d-online-name', name); } catch (_) {}
+    showOnlineScreen('browser');
+    onlineMsg(`Willkommen ${name}. Erstelle einen Raum oder tritt einem offenen Raum bei.`);
+    socket?.emit('list_rooms');
+    return true;
+  }
+
+  function leaveLobbyUi(message = 'Du bist wieder in der Raumliste.') {
+    online.room = null;
+    online.roomCode = '';
+    showOnlineScreen(online.playerNameSet ? 'browser' : 'name');
+    if (startHint) startHint.textContent = 'Warte auf Spieler…';
+    if (lobbyBox) lobbyBox.classList.add('hidden');
+    onlineMsg(message);
+    socket?.emit('list_rooms');
+  }
+
+  function modeInfo(modeKey) {
+    return online.modes?.[modeKey] || {
+      label: modeKey === 'pvp1v1' ? '1v1 Spieler gegen Spieler' : modeKey === 'bots2v2' ? '2v2 Menschen vs 2 gute Bots' : modeKey === 'bots3v3' ? '3v3 Menschen vs 3 gute Bots' : '4v4 Menschen vs 4 gute Bots',
+      maxHumans: modeKey === 'pvp1v1' ? 2 : modeKey === 'bots2v2' ? 2 : modeKey === 'bots3v3' ? 3 : 4,
+      minHumans: modeKey === 'pvp1v1' ? 2 : 1,
+      bots: modeKey === 'pvp1v1' ? 0 : modeKey === 'bots2v2' ? 2 : modeKey === 'bots3v3' ? 3 : 4
+    };
+  }
+
+  function populateModeSelects() {
+    const keys = ['pvp1v1', 'bots2v2', 'bots3v3', 'bots4v4'];
+    const htmlOptions = keys.map(k => `<option value="${k}">${escapeHtml(modeInfo(k).label)}</option>`).join('');
+    if (onlineModeSelect) onlineModeSelect.innerHTML = htmlOptions;
+    if (lobbyModeSelect) lobbyModeSelect.innerHTML = htmlOptions;
+  }
+
+  function renderRooms(rooms) {
+    if (!roomList) return;
+    const safeRooms = Array.isArray(rooms) ? rooms : [];
+    if (playerCountText) playerCountText.textContent = safeRooms.length === 1 ? '1 offener Raum' : `${safeRooms.length} offene Räume`;
+    if (!online.playerNameSet) {
+      roomList.innerHTML = '<div class="onlineMessage">Gib oben zuerst deinen Namen ein. Danach kannst du Räume sehen und beitreten.</div>';
+      return;
+    }
+    if (safeRooms.length === 0) {
+      roomList.innerHTML = '<div class="onlineMessage">Keine offenen Räume. Erstelle selbst einen Raum.</div>';
+      return;
+    }
+    roomList.innerHTML = safeRooms.map(room => {
+      const full = Number(room.players) >= Number(room.maxHumans);
+      return `
+        <div class="roomItem">
+          <div>
+            <strong>${escapeHtml(room.code)}</strong>
+            <small>${escapeHtml(room.hostName || 'Host')} ist Host</small>
+            <div class="roomMeta">
+              <span class="miniTag">${escapeHtml(room.modeLabel)}</span>
+              <span class="miniTag">${Number(room.players)}/${Number(room.maxHumans)} Spieler</span>
+              <span class="miniTag">${Number(room.ready)} Ready</span>
+            </div>
+          </div>
+          <button class="secondary" ${full ? 'disabled' : ''} data-join-room="${escapeHtml(room.code)}">${full ? 'Voll' : 'Beitreten'}</button>
+        </div>
+      `;
+    }).join('');
+    roomList.querySelectorAll('[data-join-room]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!confirmOnlineName()) return;
+        if (onlineCodeInput) onlineCodeInput.value = btn.dataset.joinRoom;
+        socket?.emit('join_room', { roomCode: btn.dataset.joinRoom, name: getOnlineName() });
+        onlineMsg(`Trete Raum ${btn.dataset.joinRoom} bei…`);
+      });
+    });
+  }
+
+  function renderLobby(room) {
+    if (!room || !Array.isArray(room.players)) return;
+    if (online.active && room.status === 'lobby') {
+      online.active = false;
+      state = 'menu';
+      modeLocked = false;
+      menu.classList.remove('hidden');
+      onlineStatus?.classList.add('hidden');
+      hideBig();
+    }
+    online.room = room;
+    online.roomCode = room.code;
+    showOnlineScreen('lobby');
+    const isHost = room.hostId === online.socketId;
+    if (lobbyBox) lobbyBox.classList.remove('hidden');
+    if (lobbyCode) lobbyCode.textContent = room.code;
+    if (lobbyModeSelect) {
+      lobbyModeSelect.value = room.mode;
+      lobbyModeSelect.disabled = !isHost;
+      lobbyModeSelect.title = isHost ? 'Du bist Host und kannst den Modus ändern.' : 'Nur der Host kann den Modus ändern.';
+    }
+    const own = room.players.find(p => p.id === online.socketId);
+    if (readyBtn) {
+      readyBtn.textContent = own?.ready ? '✅ Ready' : 'Ready drücken';
+      readyBtn.classList.toggle('secondary', !!own?.ready);
+    }
+    const missingPlayers = Math.max(0, Number(room.minHumans || 1) - room.players.length);
+    const notReady = room.players.filter(p => !p.ready).map(p => p.name);
+    const canStart = isHost && missingPlayers === 0 && notReady.length === 0;
+    if (startOnlineBtn) {
+      startOnlineBtn.disabled = !canStart;
+      startOnlineBtn.textContent = isHost ? 'Spiel starten' : 'Warten auf Host';
+    }
+    if (startHint) {
+      if (!isHost) startHint.textContent = 'Nur der Host kann starten. Drücke Ready und warte.';
+      else if (missingPlayers > 0) startHint.textContent = `Es fehlen noch ${missingPlayers} Spieler für diesen Modus.`;
+      else if (notReady.length > 0) startHint.textContent = `Noch nicht ready: ${notReady.join(', ')}`;
+      else startHint.textContent = 'Alle sind Ready. Du kannst starten.';
+    }
+    if (lobbyInfoText) {
+      lobbyInfoText.textContent = isHost
+        ? 'Du bist Host. Wähle den Modus und starte erst, wenn alle Ready sind.'
+        : 'Du bist Spieler. Drücke Ready, dann wartet ihr auf den Host.';
+    }
+    if (playerList) {
+      playerList.innerHTML = room.players.map(p => `
+        <div class="playerItem">
+          <div><strong>${escapeHtml(p.name)}${p.id === online.socketId ? ' <small>du</small>' : ''}</strong><br><small>${p.isHost ? 'Host' : 'Spieler'}</small></div>
+          <span class="readyDot ${p.ready ? 'ready' : ''}">${p.ready ? 'READY' : 'WARTET'}</span>
+        </div>
+      `).join('');
+    }
+    onlineMsg(`${room.modeLabel} • ${room.players.length}/${room.maxHumans} Spieler • Code ${room.code}`);
+  }
+
+  function setHumanLook(car, team, index, pvpOrange = false) {
+    if (team === 'orange' || pvpOrange) {
+      const colors = ['#ff8a1d', '#ffad3c', '#ff6d2a', '#ffc04f'];
+      setCarLook(car, colors[index % colors.length], '#fff0b8');
+    } else {
+      const colors = ['#00b7ff', '#38ddff', '#1ad1b8', '#7ee7ff'];
+      setCarLook(car, colors[index % colors.length], '#d8fbff');
+    }
+  }
+
+  function setBotLook(car, index) {
+    const colors = ['#ff8a1d', '#ffb044', '#ff6b20', '#ffc05d'];
+    setCarLook(car, colors[index % colors.length], '#fff3cf');
+  }
+
+  function configureOnlineGame(room) {
+    online.active = true;
+    online.room = room;
+    online.role = room.hostId === online.socketId ? 'host' : 'guest';
+    online.carByPlayer = new Map();
+    online.ownCar = null;
+    mode = `online-${room.mode}`;
+    loadedReplayMode = false;
+    modeLocked = true;
+
+    for (const car of cars) {
+      car.active = false;
+      car.networkControlled = false;
+      car.netInput = { up: false, down: false, left: false, right: false, boost: false };
+      car.netPlayerId = null;
+      car.controls = null;
+    }
+
+    const pvp = room.mode === 'pvp1v1';
+    room.players.forEach((player, i) => {
+      const car = onlineHumanSlots[i];
+      if (!car) return;
+      car.active = true;
+      car.name = cleanPlayerName(player.name, `Spieler ${i + 1}`);
+      car.team = pvp && i === 1 ? 'orange' : 'blue';
+      car.isBot = false;
+      car.netPlayerId = player.id;
+      car.networkControlled = online.role === 'host' && player.id !== online.socketId;
+      car.controls = (player.id === online.socketId) ? defaultBlueControls : null;
+      car.netInput = { up: false, down: false, left: false, right: false, boost: false };
+      setHumanLook(car, car.team, i, pvp && i === 1);
+      online.carByPlayer.set(player.id, car);
+      if (player.id === online.socketId) online.ownCar = car;
+    });
+
+    const botCount = modeInfo(room.mode).bots || 0;
+    for (let i = 0; i < botCount; i++) {
+      const bot = onlineBotSlots[i];
+      if (!bot) continue;
+      bot.active = true;
+      bot.name = `Bot ${i + 1}`;
+      bot.team = 'orange';
+      bot.isBot = true;
+      bot.controls = null;
+      bot.networkControlled = false;
+      bot.aiThrottle = bot.aiSteer = bot.aiBoost = 0;
+      setBotLook(bot, i);
+    }
+
+    score.blue = 0;
+    score.orange = 0;
+    gameClock = MATCH_TIME;
+    state = online.role === 'host' ? 'countdown' : 'play';
+    menu.classList.add('hidden');
+    if (onlineStatus) onlineStatus.classList.remove('hidden');
+    if (onlineStatusText) onlineStatusText.textContent = `${online.role === 'host' ? 'Host' : 'Spieler'} • Raum ${room.code} • ${room.modeLabel}`;
+    resetOnlineRound(true);
+    updateHud();
+    ensureAudio();
+  }
+
+  function resetOnlineRound(withCountdown = true) {
+    const blueList = activeCars().filter(car => car.team === 'blue');
+    const orangeList = activeCars().filter(car => car.team === 'orange');
+    const place = (list, side) => {
+      const spacing = list.length >= 4 ? 72 : 86;
+      list.forEach((car, i) => {
+        const offset = (i - (list.length - 1) / 2) * spacing;
+        const x = side === 'blue' ? 255 : W - 235;
+        const y = clamp(H / 2 + offset, FIELD_T + car.radius + 14, FIELD_B - car.radius - 14);
+        resetCar(car, x, y, side === 'blue' ? 0 : Math.PI);
+      });
+    };
+    place(blueList, 'blue');
+    place(orangeList, 'orange');
+    resetBall(true);
+    particles.length = 0;
+    sparks.length = 0;
+    rings.length = 0;
+    trail.length = 0;
+    shake = 0;
+    slowMo = 0;
+    goalFreeze = 0;
+    clearReplayBuffer();
+    countdown = withCountdown ? 3.05 : 0;
+    if (online.role === 'host') {
+      state = withCountdown ? 'countdown' : 'play';
+      if (withCountdown) showBig('3'); else hideBig();
+    } else {
+      hideBig();
+    }
+  }
+
+  function getTeamGoalName(team) {
+    const last = ball.lastTouch && activeCars().find(car => car.name === ball.lastTouch && car.team === team);
+    if (last) return last.name;
+    const human = activeCars().find(car => car.team === team && !car.isBot);
+    return human ? human.name : (team === 'blue' ? 'Blau' : 'Orange');
+  }
+
+  function getCarBySlot(slotId) {
+    return cars.find(car => car.onlineSlotId === slotId);
+  }
+
+  function makeOnlineSnapshot() {
+    return {
+      state,
+      countdown,
+      gameClock,
+      score: { blue: score.blue, orange: score.orange },
+      ball: snapshotBall(),
+      cars: activeCars().map(car => ({
+        slotId: car.onlineSlotId,
+        name: car.name,
+        team: car.team,
+        isBot: !!car.isBot,
+        color: car.color,
+        accent: car.accent,
+        snap: snapshotCar(car)
+      }))
+    };
+  }
+
+  function applyOnlineSnapshot(snapshot) {
+    if (!snapshot || !Array.isArray(snapshot.cars)) return;
+    const live = new Set();
+    for (const item of snapshot.cars) {
+      const car = getCarBySlot(item.slotId);
+      if (!car || !item.snap) continue;
+      live.add(item.slotId);
+      car.active = true;
+      car.name = cleanPlayerName(item.name, car.name || 'Spieler');
+      car.team = item.team === 'orange' ? 'orange' : 'blue';
+      car.isBot = !!item.isBot;
+      car.color = item.color || car.color;
+      car.accent = item.accent || car.accent;
+      restoreCar(car, item.snap);
+    }
+    for (const car of cars) {
+      if (car.onlineSlotId && !live.has(car.onlineSlotId)) car.active = false;
+    }
+    if (snapshot.ball) restoreBall(snapshot.ball);
+    if (snapshot.score) {
+      score.blue = Number(snapshot.score.blue) || 0;
+      score.orange = Number(snapshot.score.orange) || 0;
+    }
+    gameClock = Number(snapshot.gameClock ?? gameClock);
+    countdown = Number(snapshot.countdown ?? countdown);
+    state = snapshot.state || state;
+    updateHud();
+  }
+
+  function sendOnlineSnapshot() {
+    if (!socket || !online.active || online.role !== 'host') return;
+    const now = performance.now();
+    if (now - online.lastSnapshotAt < 16) return;
+    online.lastSnapshotAt = now;
+    socket.emit('host_snapshot', { snapshot: makeOnlineSnapshot() });
+  }
+
+  function readOnlineInput() {
+    return {
+      up: keys.has('KeyW') || keys.has('ArrowUp'),
+      down: keys.has('KeyS') || keys.has('ArrowDown'),
+      left: keys.has('KeyA') || keys.has('ArrowLeft'),
+      right: keys.has('KeyD') || keys.has('ArrowRight'),
+      boost: keys.has('ShiftLeft') || keys.has('ShiftRight') || keys.has('Enter') || keys.has('NumpadEnter') || keys.has('Space')
+    };
+  }
+
+  function setupOnline() {
+    const savedName = (() => {
+      try { return localStorage.getItem('rl2d-online-name') || ''; } catch (_) { return ''; }
+    })();
+    if (onlineNameInput) onlineNameInput.value = savedName || '';
+    if (savedName) getOnlineName();
+    populateModeSelects();
+    showOnlineScreen('name');
+
+    if (!socket) {
+      onlineMsg('Online ist nur auf Render/Server aktiv. Lokal bleibt das Original spielbar.');
+      return;
+    }
+
+    saveOnlineNameBtn?.addEventListener('click', confirmOnlineName);
+    onlineNameInput?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') confirmOnlineName();
+    });
+    changeNameBtn?.addEventListener('click', () => {
+      online.playerNameSet = false;
+      showOnlineScreen('name');
+      onlineMsg('Du kannst deinen Namen ändern. Danach auf Weiter drücken.');
+      onlineNameInput?.focus();
+    });
+    clearCodeBtn?.addEventListener('click', () => {
+      if (onlineCodeInput) onlineCodeInput.value = '';
+      onlineCodeInput?.focus();
+    });
+    copyCodeBtn?.addEventListener('click', async () => {
+      const code = online.roomCode || lobbyCode?.textContent || '';
+      if (!code) return;
+      try {
+        await navigator.clipboard.writeText(code);
+        onlineMsg(`Code ${code} kopiert.`);
+      } catch (_) {
+        onlineMsg(`Code: ${code}`);
+      }
+    });
+
+    createOnlineRoomBtn?.addEventListener('click', () => {
+      if (!confirmOnlineName()) return;
+      socket.emit('create_room', { name: getOnlineName(), mode: onlineModeSelect?.value || 'pvp1v1' });
+      onlineMsg('Raum wird erstellt…');
+    });
+    joinOnlineRoomBtn?.addEventListener('click', () => {
+      if (!confirmOnlineName()) return;
+      const code = String(onlineCodeInput?.value || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+      if (!code) return onlineMsg('Bitte Raumcode eingeben.');
+      if (onlineCodeInput) onlineCodeInput.value = code;
+      socket.emit('join_room', { roomCode: code, name: getOnlineName() });
+      onlineMsg(`Trete Raum ${code} bei…`);
+    });
+    refreshRoomsBtn?.addEventListener('click', () => {
+      if (!online.playerNameSet) return hasOnlineName(true);
+      socket.emit('list_rooms');
+      onlineMsg('Raumliste aktualisiert.');
+    });
+    readyBtn?.addEventListener('click', () => {
+      const own = online.room?.players?.find(p => p.id === online.socketId);
+      socket.emit('set_ready', { ready: !own?.ready });
+    });
+    startOnlineBtn?.addEventListener('click', () => {
+      if (startOnlineBtn.disabled) return;
+      socket.emit('start_game');
+      onlineMsg('Spiel startet…');
+    });
+    leaveRoomBtn?.addEventListener('click', () => {
+      socket.emit('leave_room');
+      leaveLobbyUi('Raum verlassen. Du bist wieder in der Raumliste.');
+    });
+    backToLobbyBtn?.addEventListener('click', () => {
+      if (online.role === 'host') socket.emit('back_to_lobby');
+      else socket.emit('leave_room');
+      online.active = false;
+      state = 'menu';
+      modeLocked = false;
+      menu.classList.remove('hidden');
+      onlineStatus?.classList.add('hidden');
+      hideBig();
+      leaveLobbyUi('Zurück zur Lobby/Raumliste.');
+    });
+    lobbyModeSelect?.addEventListener('change', () => socket.emit('set_mode', { mode: lobbyModeSelect.value }));
+
+    socket.on('server_hello', ({ id, modes }) => {
+      online.socketId = id;
+      online.modes = modes || online.modes;
+      populateModeSelects();
+      onlineMsg('Online verbunden. Gib deinen Namen ein und drücke Weiter.');
+    });
+    socket.on('rooms_list', renderRooms);
+    socket.on('room_created', room => {
+      renderLobby(room);
+      onlineMsg(`Raum ${room.code} erstellt. Teile den Code mit deinen Freunden.`);
+    });
+    socket.on('room_joined', room => {
+      renderLobby(room);
+      onlineMsg(`Raum ${room.code} beigetreten. Jetzt Ready drücken.`);
+    });
+    socket.on('room_state', renderLobby);
+    socket.on('room_error', ({ message }) => onlineMsg(message || 'Online-Fehler.'));
+    socket.on('room_closed', ({ message }) => {
+      online.active = false;
+      state = 'menu';
+      modeLocked = false;
+      menu.classList.remove('hidden');
+      onlineStatus?.classList.add('hidden');
+      leaveLobbyUi(message || 'Raum geschlossen.');
+    });
+    socket.on('game_start', room => configureOnlineGame(room));
+    socket.on('player_input', ({ playerId, input }) => {
+      const car = online.carByPlayer.get(playerId);
+      if (car) car.netInput = {
+        up: !!input?.up,
+        down: !!input?.down,
+        left: !!input?.left,
+        right: !!input?.right,
+        boost: !!input?.boost
+      };
+    });
+    socket.on('host_snapshot', snapshot => {
+      if (online.active && online.role === 'guest') applyOnlineSnapshot(snapshot);
+    });
+
+    setInterval(() => {
+      if (!socket || !online.active || online.role !== 'guest') return;
+      socket.emit('player_input', { input: readOnlineInput() });
+    }, 33);
+
+    setInterval(() => {
+      if (!socket || online.active || !online.playerNameSet) return;
+      socket.emit('list_rooms');
+    }, 3000);
+  }
+
+  setupOnline();
+  updateHud();
+  updateReplaySaveButton();
+  draw();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
