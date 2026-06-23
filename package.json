@@ -1,0 +1,14 @@
+{
+  "name": "rocket-league-2d-pro-online-v7",
+  "version": "7.0.0",
+  "description": "Rocket League 2D Pro Online V7 mit besserem Netcode, deutschem Schnellchat, Ingame-Chat und TAB-Scoreboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
+}
